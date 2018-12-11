@@ -9,7 +9,4 @@ LSMCodeRConfig<-list()
 LSMCodeRConfig$srcdir<-normalizePath(dirname(attr(body(function() {}),'srcfile')$filename))
 LSMCodeRConfig$maindir<-dirname(LSMCodeRConfig$srcdir)
 
-source(file.path(LSMCodeRConfig$maindir,"calciumImagingFunctions.R"))
-
-
-source("")
+source(file.path(LSMCodeRConfig$srcdir,"calciumImagingFunctions.R"))
