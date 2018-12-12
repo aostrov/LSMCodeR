@@ -1,5 +1,33 @@
 # Basic functions for dealing with microscopy data
 
+readLogFileData<-function(logFile){
+  lines<-readLines(logFile,n=2)
+  magic<-"<!-- LSM acquisition log file | Orger's Lab | Champalimaud Center for the Unknown -->"
+  if (lines[2]!=magic){
+    stop("This doesn't appear to be a log file from the LSM!")
+  }
+  lines<-readLines(logFile)
+  framedata<-lines[(grep("<framedata>",lines)+1):(grep("</framedata>",lines)-1)]
+  bigFrame<-lapply(strsplit(framedata,"\\t"), function(x) as.numeric(x[c(1,2,9)]))
+  bigDataFrame<-data.frame(matrix(unlist(bigFrame), nrow=length(bigFrame), byrow=T))
+  colnames(bigDataFrame)<-c("frame","time","otherTime")
+  return(bigDataFrame)
+}
+
+readLogFileMetaData<-function(logFile){
+  lines<-readLines(logFile,n=2)
+  magic<-"<!-- LSM acquisition log file | Orger's Lab | Champalimaud Center for the Unknown -->"
+  if (lines[2]!=magic){
+    stop("This doesn't appear to be a log file from the LSM!")
+  }
+  lines<-readLines(logFile)
+  framedata<-lines[1:10]
+  framedata<-gsub("<[[:graph:]]*?>","",framedata)[c(3,5,6,7,8)]
+  names(framedata)<-c("Date","exposure","numSheets","verticalSpan","frameCount")
+  return(framedata)
+}
+
+
 makeDFF<-function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
   zdim<-dim(imageStack)[xyzDimOrder[3]]
   xdim<-dim(imageStack)[xyzDimOrder[1]]
