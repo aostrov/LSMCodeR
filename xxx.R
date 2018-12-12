@@ -263,3 +263,10 @@ for(i in 1:4){
   
 }
 
+###############
+## Log Files ##
+###############
+
+logFile<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1plane-2SP/logs/lsmlog_acq.xml"
+logFileMetaData<-readLogFileMetaData(logFile)
+logFileParsed<-readLogFile(logFile)
