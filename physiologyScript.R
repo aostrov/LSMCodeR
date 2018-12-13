@@ -165,7 +165,7 @@ for(i in 1:4){
     dim(downSampledImage)<-c(350,256,length(rangeOfImages))
     print("making the DFF...\n")
     print(dim(downSampledImage))
-    average<-average+makeDFF(downSampledImage,xyzDimOrder = c(1,2,3),backgroundSlices=c(75:85))
+    average<-average+makeDFF(downSampledImage,xyzDimOrder = c(1,2,3),backgroundSlices=backgroundSlices)
     
   }
   average<-average/length(seq(from=i,to=20,by=4))
