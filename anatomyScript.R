@@ -26,12 +26,16 @@ imageData<-file.h5[["imagedata"]]
 # data is in the form:
 # [stacks,(channels),slices,rows, columns]
 
-
-write.nrrd(frameAverageForAnatomyStacks(imageData[,,,,],
-                                        reorderImageSlices = reorderImageSlices,
-                                        roundOutput = roundOutput),
-           file.path(outDir,outDirSubDir,"anatomyAverageReordered.nrrd"),
-           dtype = dtype)
+if (file.exists(file.path(outDir,outDirSubDir,"anatomyAverageReordered.nrrd"))) {
+  print("File already exists. Doing Nothing")
+} else {
+  write.nrrd(frameAverageForAnatomyStacks(imageData[,,,,],
+                                          reorderImageSlices = reorderImageSlices,
+                                          roundOutput = roundOutput),
+             file.path(outDir,outDirSubDir,"anatomyAverageReordered.nrrd"),
+             dtype = dtype)
+  
+}
 
 
 

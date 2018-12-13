@@ -2,7 +2,7 @@
 ## Magic Numbers ##
 ###################
 # outDir
-outDirSubDir<-"20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP"
+outDirSubDir<-"20181204-gcamp7F-7d-SabineBars-1planeSP"
 outDir<-"C:/Users/Aaron/Desktop/nrrdFiles/"
 myFile<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP/20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP.mat"
 
@@ -152,6 +152,11 @@ for(i in 1:4){
   print(seq(from=i,to=20,by=4))
   average<-array(data=0,dim = c(350,256,181))
   # dim(average)<-c(350,256,181)
+  if (file.exists(file.path(outDir,outDirSubDir,paste("Average_stim",i,".nrrd",sep="")))) {
+    print(paste(outDir,outDirSubDir,paste("Average_stim",i,".nrrd already exists. Skipping.",sep="")))
+    next()
+  }
+  
   for (stimulus in seq(from=i,to=20,by=4)){
     start<-presentationList[[stimulus]]$start
     end<-presentationList[[stimulus]]$end
