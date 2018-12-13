@@ -33,61 +33,8 @@ write.nrrd(reorderedImage,testFileReordered)
 colMeansAverage<-colMeans(imageData[,,,,],dims=1)
 write.nrrd(aperm(colMeansAverage,c(3,2,1)),file="C:/Users/Aaron/Desktop/colMeansAverge.nrrd")
 
-###############################
-## Average of Anatomy Stacks ##
-###############################
 
-frameAverageForAnatomyStacks<-function(imageDataArray,dimensionOrder=c(3,2,1),reorderImageSlices=NULL) {
-  averageSlices<-colMeans(imageDataArray,dims=1)
-  averageSlices<-aperm(averageSlices,dimensionOrder)
-  if (!is.null(reorderImageSlices)){
-    averageSlices<-averageSlices[,,reorderImageSlices]
-  }
-  return(averageSlices)
-}
 
-doesReorder<-function(testImageArray,reorderImageSlices=c(84:100,1:83)){
-  myAnatomyStack<-frameAverageForAnatomyStacks(testImageArray) - 
-    frameAverageForAnatomyStacks(testImageArray,reorderImageSlices = reorderImageSlices)
-  if (any(myAnatomyStack)) { 
-    return(1) 
-  }
-  return(0)
-}
-
-##############################
-## max intensity projection ##
-##############################
-
-# create an intensity projection of a 3D image 
-# supports maximum, minimum, and mean projections,
-# as well as standard deviation. Sd projections are comparatively slow
-#
-# Assumes that the images have been read in as a multidimensional vector
-# The default is to assume that x is the 3rd column, and y is the 2nd column,
-# but this default can be overwritten.
-# Returns a 2D vector of equal length to x*y, where the z dimension has been collapsed.
-#
-# If a multi-frame image is passed as an array form [frames,?,slices,rows,columns]
-# apply() is used to recursively call intensityProjetion.
-# This returns a 3D vector that has dimensions x*y*f with the z dimension collapsed.
-#
-# At the moment this function does not support direct processing of H5D objects,
-# these objects must first be coerced to a 4D array before being passed to the function. 
-intensityProjection<-function(imageDataArray,rowColumn=c(3,2),projectionType=c("max","min","mean","sd"),fourD=FALSE) {
-  if (fourD) {
-    print("recursive stage reached")
-    dims<-dim(imageDataArray)
-    ip<-apply(imageDataArray,1,intensityProjection,rowColumn=rowColumn,projectionType=projectionType)
-    dim(ip)<-c(dims[4],dims[3],dims[1])
-    return(ip)    
-  } else {
-    print("deep state reached")
-    print(dim(imageDataArray))
-    projectionType=match.arg(projectionType)
-    apply(imageDataArray, rowColumn, match.fun(projectionType))
-  }
-}
 mip<-intensityProjection(colMeansAverage)
 write.nrrd(mip,file="C:/Users/Aaron/Desktop/mip2slices.nrrd")
 
