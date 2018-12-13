@@ -71,17 +71,19 @@ downSampleMean2x2<-function(imageData){
 ## Average of Anatomy Stacks ##
 ###############################
 
+# ... can be used to pass a digits = ... to round()
 frameAverageForAnatomyStacks<-function(imageDataArray,
                                        dimensionOrder=c(3,2,1),
                                        reorderImageSlices=NULL,
-                                       roundOutput=F) {
+                                       roundOutput=F,
+                                       digits=1) {
   averageSlices<-colMeans(imageDataArray,dims=1)
   averageSlices<-aperm(averageSlices,dimensionOrder)
   if (!is.null(reorderImageSlices)){
     averageSlices<-averageSlices[,,reorderImageSlices]
   }
   if (roundOutput){
-    averageSlices <- round(averageSlices)
+    averageSlices <- round(averageSlices,digits)
   }
   return(averageSlices)
 }
