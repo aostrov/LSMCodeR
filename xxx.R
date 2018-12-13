@@ -65,4 +65,16 @@ write.nrrd(testdff,file.path(nrrdFiles,"testdff2.nrrd"))
 
 logFile<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1plane-2SP/logs/lsmlog_acq.xml"
 logFileMetaData<-readLogFileMetaData(logFile)
-logFileParsed<-readLogFile(logFile)
+logFileParsed<-readLogFileData(logFile)
+
+# read in the table
+# I will need to redo this importing to 
+# try to clean up the log directly in R
+crudely <- read.table("C:/Users/Aaron/Documents/R/LSMCodeR/stuff/crudelyParsedLog.txt",sep=" ")
+# the stimulus shader can be read as a factor
+# and the first derivative of this can tell
+# us when the transitions happen
+crudelyDiffed <- diff(as.integer(crudely$V1))
+crudeTransitionsRedToBar <- crudely[grep(-2,crudelyDiffed),] # note that this is missing the first transition which goes from green to bar
+
+
