@@ -50,12 +50,6 @@ write.nrrd(mip,file="C:/Users/Aaron/Desktop/mip2slices.nrrd")
 ################
 
 myFirstSlice<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1plane-2SP/20181204-gcamp7F-7d-SabineBars-1plane-2SP.mat"
-myFirstSliceLog<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1plane-2SP/logs/lsmlog_acq.xml"
-Plane41SP<-"F:\\Imaging\\GCaMP7_tests\\20181204-g7\\20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP"
-plane41SPFile<-"20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP.mat"
-
-myNextSlice<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1planeSP/20181204-gcamp7F-7d-SabineBars-1planeSP.mat"
-
 file.h5 <- H5File$new(file.path(myNextSlice), mode = "r")
 imageDataSlice<-file.h5[['imagedata']]
 # file.h5$close()
@@ -89,24 +83,6 @@ soma_2_backgroundSubtract<-apply(soma_2[,,],1,function(x) x-avgBackgroundCheatin
 dim(soma_2_backgroundSubtract)<-c(21,23,33001)
 soma_2_dff<-apply(soma_2_backgroundSubtract[,,],3,function(x) x/avgBackgroundCheating)
 
-flashmean<-mean(imageDataSlice[1:100,,,10:20,10:20])
-flashsd<-sd(imageDataSlice[1:100,,,10:20,10:20])
-
-slicesWithBigNumbers<-c()
-for (i in 1:100){
-  if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
-    slicesWithBigNumbers<-c(slicesWithBigNumbers,i)
-  }
-}
-startOfStimulations<-max(slicesWithBigNumbers)
-# get the salient frames for the second green flash 
-slicesWithBigNumbers<-c()
-for (i in (33001-2000):33001){
-  if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
-    slicesWithBigNumbers<-c(slicesWithBigNumbers,i)
-  }
-}
-endOfStimulations<-min(slicesWithBigNumbers)
 
 # get full time range
 firstFrame=   10.012 # in ms
@@ -126,105 +102,6 @@ write.nrrd(testdff,file.path(nrrdFiles,"testdff2.nrrd"))
 
 ##################################################################
 
-endOfFirstGreenFlash<-startOfStimulations + 1
-stimulusPeriod<-1600
-analysisWindow<-1800
-numberOfStimuliInBlock<-4
-dryRun=F
-downSampleInTime<-10
-backgroundSlices=c(75:85)
-
-for (block in 0:4){
-  for (stimulus in 0:3){
-    print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
-    x<-((endOfFirstGreenFlash+1)+(stimulusPeriod*stimulus))+
-      (stimulusPeriod*numberOfStimuliInBlock*block)
-    y<-((endOfFirstGreenFlash+1)+(stimulusPeriod*stimulus))+
-      (stimulusPeriod*numberOfStimuliInBlock*block)+analysisWindow
-    print(x)
-    print(y)
-    file.exists(file.path(nrrdFiles,
-                          paste("stimulus_bar-",stimulus+1,"-for_stimulus_block-",block+1,".nrrd",sep="")))
-    if (!dryRun) {    
-      rangeOfImages<-seq(from=x,to=y,by=downSampleInTime)
-      downSampledImage<-apply(
-        imageDataSlice[rangeOfImages,,,,],
-        1,
-        function(x) resizeImage(x,350,256))
-      dim(downSampledImage)<-c(350,256,length(rangeOfImages))
-      write.nrrd(makeDFF(downSampledImage,xyzDimOrder = c(1,2,3),backgroundSlices=backgroundSlices),
-                 file.path(nrrdFiles,
-                           paste("stimulus_bar-",stimulus+1,"-for_stimulus_block-",block+1,".nrrd",sep="")))
-    }  
-  }
-}
-nrrdFiles <- file.path("C:\\Users\\Aaron\\Desktop\\nrrdFiles\\20181204-gcamp7F-7d-SabineBars-1planeSP")
-presentationList<-list()
-count=1
-for (block in 0:4){
-  for (stimulus in 0:3){
-    print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
-    x<-((endOfFirstGreenFlash+1)+(stimulusPeriod*stimulus))+
-      (stimulusPeriod*numberOfStimuliInBlock*block)
-    y<-((endOfFirstGreenFlash+1)+(stimulusPeriod*stimulus))+
-      (stimulusPeriod*numberOfStimuliInBlock*block)+analysisWindow
-    presentationList[[count]]<-list("block"=block+1,
-                                "stimulus"=stimulus+1,
-                                "start"=x,
-                                "end"=y,
-                                "stimulusPeriod"=stimulusPeriod,
-                                "analysisWindow"=analysisWindow,
-                                "outFile"=file.path(nrrdFiles,
-                                                    paste("stimulus_bar-",
-                                                          stimulus+1,
-                                                          "-for_stimulus_block-",
-                                                          block+1,
-                                                          ".nrrd",
-                                                          sep="")
-                                                    )
-                                ,"backgroundSlices"=backgroundSlices,
-                                "resize"=c(350,256),
-                                "timeResampled"=downSampleInTime)
-    print(x)
-    print(y)
-    count=count+1
-  }
-}
-
-# I want to be able to look through the list and get a sublist that can
-# be used to perform functions on them, such as averaging.
-# I should also decide if I want to store any raw data in this list, 
-# although that might be too heavy a solution for memory usage. Better
-# might be either lots of reading in and out from the file system nrrds, or 
-# to continue using the HDF5 connection for subsetting things.
-stim1<-c(1,5,9,13,17)
-stim2<-c(2,6,10,14,18)
-stim3<-c(3,7,11,15,19)
-stim4<-c(4,8,12,16,20)
-for(i in 1:4){
-  print(seq(from=i,to=20,by=4))
-  average<-array(data=0,dim = c(350,256,181))
-  # dim(average)<-c(350,256,181)
-  for (animal in seq(from=i,to=20,by=4)){
-    start<-presentationList[[animal]]$start
-    end<-presentationList[[animal]]$end
-    rangeOfImages<-seq(from=start,to=end,by=presentationList[[animal]]$timeResampled)
-    print("downsampling...\n")
-    print(dim(average))
-    downSampledImage<-apply(
-      imageDataSlice[rangeOfImages,,,,],
-      1,
-      function(x) resizeImage(x,350,256))
-    dim(downSampledImage)<-c(350,256,length(rangeOfImages))
-    print("making the DFF...\n")
-    print(dim(downSampledImage))
-    average<-average+makeDFF(downSampledImage,xyzDimOrder = c(1,2,3),backgroundSlices=c(75:85))
-    
-  }
-  average<-average/length(seq(from=i,to=20,by=4))
-  write.nrrd(average,file.path(nrrdFiles,paste("Average_stim",i,".nrrd",sep="")))
-  
-}
 
 ###############
 ## Log Files ##
