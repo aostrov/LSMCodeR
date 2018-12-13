@@ -8,8 +8,9 @@ file.h5 <- H5File$new(myFile, mode = "r+")
 # save a new variable that contains the image data
 # this step can be avoided, and might improve performance on very large datasets
 imageData<-file.h5[["imagedata"]]
+# file.h5$close()
 # data is in the form:
-# [stacks,?,slices,rows, columns]
+# [stacks,(channels),slices,rows, columns]
 
 bigVector<-vector(length=imageData$dims[3]*imageData$dims[4]*imageData$dims[5])
 bigVector<-as.integer(bigVector)
@@ -31,7 +32,13 @@ testFileReordered<-"C:/Users/Aaron/Desktop/averageAnatomyReordered.nrrd"
 write.nrrd(reorderedImage,testFileReordered)
 # Even more concise:
 colMeansAverage<-colMeans(imageData[,,,,],dims=1)
-write.nrrd(aperm(colMeansAverage,c(3,2,1)),file="C:/Users/Aaron/Desktop/colMeansAverge.nrrd")
+write.nrrd(aperm(round(colMeansAverage),c(3,2,1)),
+           file.path("C:/Users/Aaron/Desktop/nrrdFiles/anatomyAverageReordered.nrrd"),
+                     dtype = 'short')
+# Better still
+write.nrrd(frameAverageForAnatomyStacks(imageData[,,,,],reorderImageSlices = c(84:100,1:83),roundOutput = T),
+           file.path("C:/Users/Aaron/Desktop/nrrdFiles/anatomyAverageReordered.nrrd"),
+           dtype = 'short')
 
 
 
