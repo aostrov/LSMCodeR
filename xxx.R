@@ -51,8 +51,14 @@ write.nrrd(mip,file="C:/Users/Aaron/Desktop/mip2slices.nrrd")
 
 myFirstSlice<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1plane-2SP/20181204-gcamp7F-7d-SabineBars-1plane-2SP.mat"
 myFirstSliceLog<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1plane-2SP/logs/lsmlog_acq.xml"
-file.h5 <- H5File$new(myFirstSlice, mode = "r+")
+Plane41SP<-"F:\\Imaging\\GCaMP7_tests\\20181204-g7\\20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP"
+plane41SPFile<-"20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP.mat"
+
+myNextSlice<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1planeSP/20181204-gcamp7F-7d-SabineBars-1planeSP.mat"
+
+file.h5 <- H5File$new(file.path(myNextSlice), mode = "r")
 imageDataSlice<-file.h5[['imagedata']]
+# file.h5$close()
 
 rois<-list(
   soma_1=list(x=462, y=287, width=22, height=20),
@@ -92,11 +98,11 @@ for (i in 1:100){
     slicesWithBigNumbers<-c(slicesWithBigNumbers,i)
   }
 }
-startOfStimulations<-min(slicesWithBigNumbers)
+startOfStimulations<-max(slicesWithBigNumbers)
 # get the salient frames for the second green flash 
 slicesWithBigNumbers<-c()
 for (i in (33001-2000):33001){
-  if (mean(imageDataSlice[i,,,200:400,])>(flashmean+2*flashsd)){
+  if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
     slicesWithBigNumbers<-c(slicesWithBigNumbers,i)
   }
 }
@@ -120,12 +126,13 @@ write.nrrd(testdff,file.path(nrrdFiles,"testdff2.nrrd"))
 
 ##################################################################
 
-endOfFirstGreenFlash<-20
+endOfFirstGreenFlash<-startOfStimulations + 1
 stimulusPeriod<-1600
 analysisWindow<-1800
 numberOfStimuliInBlock<-4
 dryRun=F
 downSampleInTime<-10
+backgroundSlices=c(75:85)
 
 for (block in 0:4){
   for (stimulus in 0:3){
@@ -136,6 +143,8 @@ for (block in 0:4){
       (stimulusPeriod*numberOfStimuliInBlock*block)+analysisWindow
     print(x)
     print(y)
+    file.exists(file.path(nrrdFiles,
+                          paste("stimulus_bar-",stimulus+1,"-for_stimulus_block-",block+1,".nrrd",sep="")))
     if (!dryRun) {    
       rangeOfImages<-seq(from=x,to=y,by=downSampleInTime)
       downSampledImage<-apply(
@@ -143,13 +152,13 @@ for (block in 0:4){
         1,
         function(x) resizeImage(x,350,256))
       dim(downSampledImage)<-c(350,256,length(rangeOfImages))
-      write.nrrd(makeDFF(downSampledImage,xyzDimOrder = c(1,2,3),backgroundSlices=c(75:85)),
+      write.nrrd(makeDFF(downSampledImage,xyzDimOrder = c(1,2,3),backgroundSlices=backgroundSlices),
                  file.path(nrrdFiles,
                            paste("stimulus_bar-",stimulus+1,"-for_stimulus_block-",block+1,".nrrd",sep="")))
     }  
   }
 }
-
+nrrdFiles <- file.path("C:\\Users\\Aaron\\Desktop\\nrrdFiles\\20181204-gcamp7F-7d-SabineBars-1planeSP")
 presentationList<-list()
 count=1
 for (block in 0:4){
@@ -173,9 +182,9 @@ for (block in 0:4){
                                                           ".nrrd",
                                                           sep="")
                                                     )
-                                ,"backgroundSlices"=c(75:85),
+                                ,"backgroundSlices"=backgroundSlices,
                                 "resize"=c(350,256),
-                                "timeResampled"=10)
+                                "timeResampled"=downSampleInTime)
     print(x)
     print(y)
     count=count+1
