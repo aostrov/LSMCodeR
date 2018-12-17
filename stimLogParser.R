@@ -13,7 +13,14 @@ stimTransitions <- stimdf[grep(-2,stimdiff),]
 
  # TODO: stimTransitions is missing the first instance of the transition
 stimdf[grep(-1,stimdiff),][2,] # it should look something like this, though this returns one frame before what I want 
-
+stimTransitionsFull<-rbind(stimLog[grep(1,stimdiff),][2,],stimTransitions) # this records all of the Stim frames which occur just before the transition to a new shader. I will always want to take the time of the next frame
+newRows <- c()
+for (i in 1:nrow(stimTransitionsFull)){
+  newRows <- c(newRows,as.integer(row.names(stimTransitionsFull[i,]))+1)
+}
+if (!all(stimLog[newRows,"shader"]=="bar")){
+  print("Not all of the start times are Bar shaders :(")
+}
 # the next step here is to find out how much offset there is between the stimlog file (this one) and the LSM log file
 # once I know this offset, I can find the transitions in the stimlog file, and then find the frame in the LSM log
 # that most closely resembles this time (rounding up!). Then I can define the frames exactly, without having

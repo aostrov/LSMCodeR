@@ -77,4 +77,5 @@ crudely <- read.table("C:/Users/Aaron/Documents/R/LSMCodeR/stuff/crudelyParsedLo
 crudelyDiffed <- diff(as.integer(crudely$V1))
 crudeTransitionsRedToBar <- crudely[grep(-2,crudelyDiffed),] # note that this is missing the first transition which goes from green to bar
 
-
+startOfStimulations<-12
+testVect <- seq(from=1,to=5, by=0.5)
