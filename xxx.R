@@ -79,3 +79,50 @@ crudeTransitionsRedToBar <- crudely[grep(-2,crudelyDiffed),] # note that this is
 
 startOfStimulations<-12
 testVect <- seq(from=1,to=5, by=0.5)
+filePath<-""
+
+# I need to think of a way to tie all of the various scripts together, 
+# maybe getting an input folder and being able to pass that input to 
+# various sourced scripts so they can get the logs and other useful 
+# things. This will require breaking some other things, but that can 
+# be dealt with later.
+
+# TODO: 
+# - Get an inout dir or vector of dirs. 
+# - Read the HDF5 file to find the green flashes.
+# - Read the logs to get the needed offset
+# - Read the logs to get the frames that start each
+# - Process the stimulus presentations
+
+file.h5 <- H5File$new(myFile, mode = "r+")
+imageDataSlice<-file.h5[["imagedata"]]
+
+#################
+## Green Flash ##
+#################
+# - Read the HDF5 file to find the green flashes.
+flashmean <- mean(imageDataSlice[1:100,,,10:20,10:20])
+flashsd <- sd(imageDataSlice[1:100,,,10:20,10:20])
+
+slicesWithBigNumbers.begin <- c()
+for (i in 1:100){
+  if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
+    slicesWithBigNumbers.begin <- c(slicesWithBigNumbers.begin,i)
+  }
+}
+
+startOfStimulations <- max(slicesWithBigNumbers.begin) # last slice of starting green flash
+# get the salient frames for the second green flash 
+
+slicesWithBigNumbers.end <- c()
+for (i in (33001-2000):33001){
+  if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
+    slicesWithBigNumbers.end <- c(slicesWithBigNumbers.end,i)
+  }
+}
+endOfStimulations <- min(slicesWithBigNumbers.end) # first slice of ending flash
+
+endOfFirstGreenFlash <- startOfStimulations + 1
+
+# - Read the logs to get the needed offset
+# source(file.path(LSMCodeRConfig$srcdir,'stimLogParser.R), // some arguments here, or make sure all calls are to a path defined at the beginning of the script/loop.)
