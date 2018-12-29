@@ -5,12 +5,24 @@ lsmLogFile <- file.path(LSMCodeRConfig$logDir,
                      "lsmlog_acq.xml")
 
 # read in some data
-logFileParsed<-readLogFileData(lsmLogFile)
+logFileParsed <- readLogFileData(lsmLogFile)
 # decide if I need to discard some first set of frames
+lsmLogFileShort <- logFileParsed[30000:63000,]
 
 # logFileMetaData<-readLogFileMetaData(logFile)
 # logFileParsed<-readLogFileData(logFile)
 
-startOfStimulations<-12 # dummy variable that I'll need to grab from a script later
+endOfStimulations.frame <- 12 # dummy variable that I'll need to grab from a script later
+lsm2stim.offset.ms <- lsmLogFileShort[endOfStimulations.frame,'time'] - 
+  (stimdf[stimdf$shader=='green',][2,'seconds']*1000) # get an offset based on the end of the green flashes
 
+transitions.stimdf.bar <- stimdf[newRows,]
+transitions.stimdf.bar$correctedMilliseconds <- transitions.stimdf.bar$seconds*1000 + lsm2stim.offset.ms
+
+# get the frames in the lsmlog at which a transition to the bar shader occurs
+lsm.transition.frames <- c()
+for (i in transitions.stimdf.bar$correctedMilliseconds) {
+  lsm.transition.frames <- c(lsm.transition.frames,findInterval(i,lsmLogFileShort$time))
+}
+# not sure if I want the vector of frames as is, or if i want to offset it by +1 to account for getting the next frame...
 
