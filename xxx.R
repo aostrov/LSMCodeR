@@ -160,6 +160,8 @@ for (block in 0:4){
   }
 }
 
+# outputType <- c('raw','dff')
+outputType <- 'dff'
 count2 = 1
 for (block in 0:4){
   for (stimulus in 0:3){
@@ -180,10 +182,14 @@ for (block in 0:4){
         1,
         function(x) resizeImage(x,350,256))
       dim(downSampledImage)<-c(350,256,length(rangeOfImages))
-      write.nrrd(makeDFF(downSampledImage,
-                         xyzDimOrder = c(1,2,3),
-                         backgroundSlices=presentationList2[[count2]]$backgroundSlices),
-                 presentationList2[[count2]]$outFile)
+      write.nrrd(
+        ifelse(
+          outputType == 'dff',
+            makeDFF(downSampledImage,
+                  xyzDimOrder = c(1,2,3),
+                  backgroundSlices=presentationList2[[count2]]$backgroundSlices),
+            downSampledImage),
+        presentationList2[[count2]]$outFile)
     }  
     count2 <- count2 + 1
   }
