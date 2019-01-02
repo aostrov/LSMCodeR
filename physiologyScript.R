@@ -37,59 +37,58 @@ imageDataSlice<-file.h5[["imagedata"]]
 #################
 ## Green Flash ##
 #################
+flashmean <- mean(imageDataSlice[1:100,,,10:20,10:20])
+flashsd <- sd(imageDataSlice[1:100,,,10:20,10:20])
 
-flashmean<-mean(imageDataSlice[1:100,,,10:20,10:20])
-flashsd<-sd(imageDataSlice[1:100,,,10:20,10:20])
-
-slicesWithBigNumbers<-c()
+slicesWithBigNumbers.begin <- c()
 for (i in 1:100){
   if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
-    slicesWithBigNumbers<-c(slicesWithBigNumbers,i)
+    slicesWithBigNumbers.begin <- c(slicesWithBigNumbers.begin,i)
   }
 }
-startOfStimulations<-max(slicesWithBigNumbers)
-# get the salient frames for the second green flash 
-slicesWithBigNumbers<-c()
-for (i in (33001-2000):33001){
-  if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
-    slicesWithBigNumbers<-c(slicesWithBigNumbers,i)
-  }
-}
-endOfStimulations<-min(slicesWithBigNumbers)
 
-endOfFirstGreenFlash<-startOfStimulations + 1
+startOfStimulations <- max(slicesWithBigNumbers.begin) # last slice of starting green flash
+# get the salient frames for the second green flash 
+
+slicesWithBigNumbers.end <- c()
+for (i in (33000-2000):33000){
+  if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
+    slicesWithBigNumbers.end <- c(slicesWithBigNumbers.end,i)
+  }
+}
+endOfStimulations <- min(slicesWithBigNumbers.end) # first slice of ending flash
+
+endOfFirstGreenFlash <- startOfStimulations + 1
 
 ##################
 ## Doing Things ##
 ##################
 
 # Make a list of the different stimuli presentations
-presentationList<-list()
+presentationList2<-list()
 count=1
 for (block in 0:4){
   for (stimulus in 0:3){
     print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
-    x<-((endOfFirstGreenFlash+1)+(stimulusPeriod*stimulus))+
-      (stimulusPeriod*numberOfStimuliInBlock*block)
-    y<-((endOfFirstGreenFlash+1)+(stimulusPeriod*stimulus))+
-      (stimulusPeriod*numberOfStimuliInBlock*block)+analysisWindow
-    presentationList[[count]]<-list("block"=block+1,
-                                    "stimulus"=stimulus+1,
-                                    "start"=x,
-                                    "end"=y,
-                                    "stimulusPeriod"=stimulusPeriod,
-                                    "analysisWindow"=analysisWindow,
-                                    "outFile"=file.path(outDir,
-                                                        paste("stimulus_bar-",
-                                                              stimulus+1,
-                                                              "-for_stimulus_block-",
-                                                              block+1,
-                                                              ".nrrd",
-                                                              sep="")
-                                    )
-                                    ,"backgroundSlices"=backgroundSlices,
-                                    "resize"=c(350,256),
-                                    "timeResampled"=downSampleInTime)
+    x <- lsm.transition.frames[count]
+    y <- x + (stimulusPeriod + 200)
+    presentationList2[[count]]<-list("block"=block+1,
+                                     "stimulus"=stimulus+1,
+                                     "start"=x,
+                                     "end"=y,
+                                     "stimulusPeriod"=stimulusPeriod,
+                                     "analysisWindow"=analysisWindow,
+                                     "outFile"=file.path(outDir,
+                                                         paste("stimulus_bar-",
+                                                               stimulus+1,
+                                                               "-for_stimulus_block-",
+                                                               block+1,
+                                                               ".nrrd",
+                                                               sep="")
+                                     )
+                                     ,"backgroundSlices"=backgroundSlices,
+                                     "resize"=c(350,256),
+                                     "timeResampled"=downSampleInTime)
     print(x)
     print(y)
     count=count+1
@@ -97,43 +96,38 @@ for (block in 0:4){
 }
 
 # Write individual files for each stimulus presentation
+# outputType <- c('raw','dff')
+outputType <- 'dff'
+count2 = 1
 for (block in 0:4){
   for (stimulus in 0:3){
-    if (file.exists(file.path(outDir,outDirSubDir,
-                              paste("stimulus_bar-",
-                                    stimulus+1,
-                                    "-for_stimulus_block-",
-                                    block+1,
-                                    ".nrrd",
-                                    sep="")))) {
-      print(paste("stimulus_bar-",
-                  stimulus+1,
-                  "-for_stimulus_block-",
-                  block+1,
-                  ".nrrd already exists. Skipping.",
-                  sep=""))
+    if (file.exists(presentationList2[[count2]]$outFile)) {
+      print(paste(presentationList2[[count2]]$outFile,
+                  "already exists. Skipping."))
       next()
     }
     print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
-    x<-((endOfFirstGreenFlash+1)+(stimulusPeriod*stimulus))+
-      (stimulusPeriod*numberOfStimuliInBlock*block)
-    y<-((endOfFirstGreenFlash+1)+(stimulusPeriod*stimulus))+
-      (stimulusPeriod*numberOfStimuliInBlock*block)+analysisWindow
+    x <- presentationList2[[count2]]$start
+    y <- presentationList2[[count2]]$end
     print(x)
     print(y)
-    file.exists(file.path(outDir,outDirSubDir,
-                          paste("stimulus_bar-",stimulus+1,"-for_stimulus_block-",block+1,".nrrd",sep="")))
     if (!dryRun) {    
-      rangeOfImages<-seq(from=x,to=y,by=downSampleInTime)
+      rangeOfImages<-seq(from=x,to=y,by=presentationList2[[count2]]$timeResampled)
       downSampledImage<-apply(
         imageDataSlice[rangeOfImages,,,,],
         1,
         function(x) resizeImage(x,350,256))
       dim(downSampledImage)<-c(350,256,length(rangeOfImages))
-      write.nrrd(makeDFF(downSampledImage,xyzDimOrder = c(1,2,3),backgroundSlices=backgroundSlices),
-                 file.path(outDir,outDirSubDir,
-                           paste("stimulus_bar-",stimulus+1,"-for_stimulus_block-",block+1,".nrrd",sep="")))
+      write.nrrd(
+        ifelse(
+          outputType == 'dff',
+          makeDFF(downSampledImage,
+                  xyzDimOrder = c(1,2,3),
+                  backgroundSlices=presentationList2[[count2]]$backgroundSlices),
+          downSampledImage),
+        presentationList2[[count2]]$outFile)
     }  
+    count2 <- count2 + 1
   }
 }
 
@@ -158,9 +152,9 @@ for(i in 1:4){
   }
   
   for (stimulus in seq(from=i,to=20,by=4)){
-    start<-presentationList[[stimulus]]$start
-    end<-presentationList[[stimulus]]$end
-    rangeOfImages<-seq(from=start,to=end,by=presentationList[[stimulus]]$timeResampled)
+    start<-presentationList2[[stimulus]]$start
+    end<-presentationList2[[stimulus]]$end
+    rangeOfImages<-seq(from=start,to=end,by=presentationList2[[stimulus]]$timeResampled)
     print("downsampling...\n")
     print(dim(average))
     downSampledImage<-apply(
@@ -168,9 +162,15 @@ for(i in 1:4){
       1,
       function(x) resizeImage(x,350,256))
     dim(downSampledImage)<-c(350,256,length(rangeOfImages))
-    print("making the DFF...\n")
+    print("making the average ...")
     print(dim(downSampledImage))
-    average<-average+makeDFF(downSampledImage,xyzDimOrder = c(1,2,3),backgroundSlices=backgroundSlices)
+    average <- average + 
+      ifelse(
+        outputType == 'dff',
+        makeDFF(downSampledImage,
+                xyzDimOrder = c(1,2,3),
+                backgroundSlices=presentationList2[[stimulus]]$backgroundSlices),
+        downSampledImage)
     
   }
   average<-average/length(seq(from=i,to=20,by=4))

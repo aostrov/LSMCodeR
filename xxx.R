@@ -193,5 +193,4 @@ for (block in 0:4){
     }  
     count2 <- count2 + 1
   }
-  
 }
