@@ -7,7 +7,7 @@ lsmLogFile <- file.path(LSMCodeRConfig$logDir,
 # read in some data
 logFileParsed <- readLogFileData(lsmLogFile)
 # decide if I need to discard some first set of frames
-lsmLogFileShort <- logFileParsed[30000:63000,]
+lsmLogFileShort <- logFileParsed[30001:63000,]
 
 # logFileMetaData<-readLogFileMetaData(logFile)
 # logFileParsed<-readLogFileData(logFile)
