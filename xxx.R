@@ -125,4 +125,67 @@ endOfStimulations <- min(slicesWithBigNumbers.end) # first slice of ending flash
 endOfFirstGreenFlash <- startOfStimulations + 1
 
 # - Read the logs to get the needed offset
-# source(file.path(LSMCodeRConfig$srcdir,'stimLogParser.R), // some arguments here, or make sure all calls are to a path defined at the beginning of the script/loop.)
+# source(file.path(LSMCodeRConfig$srcdir,'stimLogParser.R')) # first the stim log
+# source(file.path(LSMCodeRConfig$srcdir,'LSMLogParser.R')) # next the LSM log
+# # there now exists an array `lsm.transition.frames` with the starting frame of each new stimuls set
+# # Previously in physiologyScript.R I would create a list `presentationList2` that could in principle be used to make a best estimate/guess of these times. Now I have them explicitly, so I could set up presentation list much more easily now.
+
+presentationList2<-list()
+count=1
+for (block in 0:4){
+  for (stimulus in 0:3){
+    print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
+    x <- lsm.transition.frames[count]
+    y <- x + (stimulusPeriod + 200)
+    presentationList2[[count]]<-list("block"=block+1,
+                                    "stimulus"=stimulus+1,
+                                    "start"=x,
+                                    "end"=y,
+                                    "stimulusPeriod"=stimulusPeriod,
+                                    "analysisWindow"=analysisWindow,
+                                    "outFile"=file.path(outDir,
+                                                        paste("stimulus_bar-",
+                                                              stimulus+1,
+                                                              "-for_stimulus_block-",
+                                                              block+1,
+                                                              ".nrrd",
+                                                              sep="")
+                                    )
+                                    ,"backgroundSlices"=backgroundSlices,
+                                    "resize"=c(350,256),
+                                    "timeResampled"=downSampleInTime)
+    print(x)
+    print(y)
+    count=count+1
+  }
+}
+
+count2 = 1
+for (block in 0:4){
+  for (stimulus in 0:3){
+    if (file.exists(presentationList2[[count2]]$outFile)) {
+      print(paste(presentationList2[[count2]]$outFile,
+                  "already exists. Skipping."))
+      next()
+    }
+    print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
+    x <- presentationList2[[count2]]$start
+    y <- presentationList2[[count2]]$end
+    print(x)
+    print(y)
+    if (!dryRun) {    
+      rangeOfImages<-seq(from=x,to=y,by=presentationList2[[count2]]$timeResampled)
+      downSampledImage<-apply(
+        imageDataSlice[rangeOfImages,,,,],
+        1,
+        function(x) resizeImage(x,350,256))
+      dim(downSampledImage)<-c(350,256,length(rangeOfImages))
+      write.nrrd(makeDFF(downSampledImage,
+                         xyzDimOrder = c(1,2,3),
+                         backgroundSlices=presentationList2[[count2]]$backgroundSlices),
+                 presentationList2[[count2]]$outFile)
+    }  
+    count2 <- count2 + 1
+  }
+  
+}
