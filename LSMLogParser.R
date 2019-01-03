@@ -1,9 +1,9 @@
 # LSMLogParser.R
 
-lsmLogFile <- file.path(LSMCodeRConfig$logDir,
+# lsmLogFile <- file.path(LSMCodeRConfig$logDir,
                      "20181204-gcamp7F-7d-SabineBars-1plane-2SP",
                      "lsmlog_acq.xml")
-
+lsmLogFile <- file.path(logdir,"lsmlog_acq.xml")
 # read in some data
 logFileParsed <- readLogFileData(lsmLogFile)
 # decide if I need to discard some first set of frames
@@ -12,7 +12,7 @@ lsmLogFileShort <- logFileParsed[30001:63000,]
 # logFileMetaData<-readLogFileMetaData(logFile)
 # logFileParsed<-readLogFileData(logFile)
 
-endOfStimulations.frame <- 12 # dummy variable that I'll need to grab from a script later
+endOfStimulations.frame <- startOfStimulations # 12 # dummy variable that I'll need to grab from a script later
 lsm2stim.offset.ms <- lsmLogFileShort[endOfStimulations.frame,'time'] - 
   (stimdf[stimdf$shader=='green',][2,'seconds']*1000) # get an offset based on the end of the green flashes
 

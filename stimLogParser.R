@@ -1,7 +1,5 @@
-logdir<-LSMCodeRConfig$logDir
-logFile <- file.path(logdir,
-                     "20181204-gcamp7F-7d-SabineBars-1plane-2SP",
-                     "stimlog_2018_12_04_11_51_15.txt")
+logdir<-"F:\\Imaging\\GCaMP7_tests\\20181204-g7\\20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP\\logs"
+logFile <- file.path(logdir,"stimlog_2018_12_04_12_21_05.txt")
 
 stimLog <- readLines(logFile, warn=FALSE)
 stimLogCleaning1 <- stimLog[
@@ -14,7 +12,7 @@ stimdiff <- diff(as.integer(stimdf$shader))
 stimTransitions <- stimdf[grep(-2,stimdiff),]
 
  # TODO: stimTransitions is missing the first instance of the transition
-stimdf[grep(-1,stimdiff),][2,] # it should look something like this, though this returns one frame before what I want 
+# stimdf[grep(-1,stimdiff),][2,] # it should look something like this, though this returns one frame before what I want 
 stimTransitionsFull<-rbind(stimdf[grep(1,stimdiff),][2,],stimTransitions) # this records all of the Stim frames which occur just before the transition to a new shader. I will always want to take the time of the next frame
 newRows <- c()
 for (i in 1:nrow(stimTransitionsFull)){
