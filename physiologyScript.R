@@ -3,11 +3,11 @@
 ###################
 # outDir
 outDirSubDir<-"20181204-gcamp7F-7d-SabineBars-1planeSP"
-outDir<-"C:/Users/Aaron/Desktop/nrrdFiles/"
+outDir<-"C:/Users/Aaron/Desktop/nrrdFiles2/"
 myFile<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP/20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP.mat"
 
 if (!dir.exists(file.path(outDir,outDirSubDir))){
-  dir.create(file.path(outDir,outDirSubDir))
+  dir.create(file.path(outDir,outDirSubDir),rec=T)
 } else {
   print("Dir exists")
 }
@@ -99,8 +99,8 @@ outputType <- 'dff'
 count2 = 1
 for (block in 0:4){
   for (stimulus in 0:3){
-    if (file.exists(presentationList2[[count2]]$outFile)) {
-      print(paste(presentationList2[[count2]]$outFile,
+    if (file.exists(file.path(presentationList2[[count2]]$outDir,paste(presentationList2[[count2]]$fileBaseName,"_dff.nrrd",sep="")))) {
+      print(paste(presentationList2[[count2]]$fileBaseName,"_dff.nrrd",
                   "already exists. Skipping."))
       next()
     }
@@ -116,14 +116,25 @@ for (block in 0:4){
         1,
         function(x) resizeImage(x,350,256))
       dim(downSampledImage)<-c(350,256,length(rangeOfImages))
-      write.nrrd(
-        ifelse(
-          outputType == 'dff',
+      if (outputType == 'dff'){
+        write.nrrd(
           makeDFF(downSampledImage,
                   xyzDimOrder = c(1,2,3),
                   backgroundSlices=presentationList2[[count2]]$backgroundSlices),
-          downSampledImage),
-        presentationList2[[count2]]$outFile)
+          file.path(presentationList2[[count2]]$outDir,
+                    paste(presentationList2[[count2]]$fileBaseName,"_dff.nrrd",sep="")
+          )
+        )
+        
+      } else {
+        write.nrrd(
+          downSampledImage,
+          file.path(presentationList2[[count2]]$outDir,
+                    paste(presentationList2[[count2]]$fileBaseName,".nrrd",sep="")
+          )
+        )
+        
+      }
     }  
     count2 <- count2 + 1
   }
@@ -162,17 +173,17 @@ for(i in 1:4){
     dim(downSampledImage)<-c(350,256,length(rangeOfImages))
     print("making the average ...")
     print(dim(downSampledImage))
-    average <- average + 
-      ifelse(
-        outputType == 'dff',
-        makeDFF(downSampledImage,
-                xyzDimOrder = c(1,2,3),
-                backgroundSlices=presentationList2[[stimulus]]$backgroundSlices),
-        downSampledImage)
-    
+    if (outputType == 'dff'){
+      average <- average + makeDFF(downSampledImage,
+                                   xyzDimOrder = c(1,2,3),
+                                   backgroundSlices=presentationList2[[stimulus]]$backgroundSlices)
+      
+    } else {
+      average <- average + downSampledImage
+    }
   }
   average<-average/length(seq(from=i,to=20,by=4))
-  write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_stim",i,".nrrd",sep="")))
+  write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_dff_stim",i,".nrrd",sep="")))
   
 }
 
