@@ -78,15 +78,13 @@ for (block in 0:4){
                                      "end"=y,
                                      "stimulusPeriod"=stimulusPeriod,
                                      "analysisWindow"=analysisWindow,
-                                     "outFile"=file.path(outDir,
-                                                         paste("stimulus_bar-",
-                                                               stimulus+1,
-                                                               "-for_stimulus_block-",
-                                                               block+1,
-                                                               ".nrrd",
-                                                               sep="")
-                                     )
-                                     ,"backgroundSlices"=backgroundSlices,
+                                     "outDir"=outDir,
+                                     "fileBaseName"=paste("stimulus_bar-",
+                                                      stimulus+1,
+                                                      "-for_stimulus_block-",
+                                                      block+1,
+                                                      sep=""),
+                                     "backgroundSlices"=backgroundSlices,
                                      "resize"=c(350,256),
                                      "timeResampled"=downSampleInTime)
     print(x)
