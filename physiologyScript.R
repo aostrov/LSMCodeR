@@ -2,9 +2,9 @@
 ## Magic Numbers ##
 ###################
 # outDir
-outDirSubDir<-"20181204-gcamp7F-7d-SabineBars-1planeSP"
-outDir<-"C:/Users/Aaron/Desktop/nrrdFiles2/"
-myFile<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP/20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP.mat"
+# outDirSubDir<-"20181204-gcamp7F-7d-SabineBars-1planeSP"
+# outDir<-"F:/Imaging/GCaMP7_tests/outputNRRDs/"
+# myFile<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP/20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP.mat"
 
 if (!dir.exists(file.path(outDir,outDirSubDir))){
   dir.create(file.path(outDir,outDirSubDir),rec=T)
@@ -12,6 +12,7 @@ if (!dir.exists(file.path(outDir,outDirSubDir))){
   print("Dir exists")
 }
 
+framesSkipped <- 30000
 stimulusPeriod<-1600
 analysisWindow<-1800
 numberOfStimuliInBlock<-4
@@ -82,7 +83,7 @@ for (block in 0:4){
                                      "end"=y,
                                      "stimulusPeriod"=stimulusPeriod,
                                      "analysisWindow"=analysisWindow,
-                                     "outDir"=outDir,
+                                     "outDir"=file.path(outDir,outDirSubDir),
                                      "fileBaseName"=paste("stimulus_bar-",
                                                       stimulus+1,
                                                       "-for_stimulus_block-",
@@ -159,36 +160,38 @@ for(i in 1:4){
   print(seq(from=i,to=20,by=4))
   average<-array(data=0,dim = c(350,256,181))
   # dim(average)<-c(350,256,181)
-  if (file.exists(file.path(outDir,outDirSubDir,paste("Average_stim",i,".nrrd",sep="")))) {
+  if (file.exists(file.path(outDir,outDirSubDir,paste("Average_dff_stim",i,".nrrd",sep="")))) {
     print(paste(outDir,outDirSubDir,paste("Average_stim",i,".nrrd already exists. Skipping.",sep="")))
-    next()
-  }
-  
-  for (stimulus in seq(from=i,to=20,by=4)){
-    start<-presentationList2[[stimulus]]$start
-    end<-presentationList2[[stimulus]]$end
-    rangeOfImages<-seq(from=start,to=end,by=presentationList2[[stimulus]]$timeResampled)
-    print("downsampling...\n")
-    print(dim(average))
-    downSampledImage<-apply(
-      imageDataSlice[rangeOfImages,,,,],
-      1,
-      function(x) resizeImage(x,350,256))
-    dim(downSampledImage)<-c(350,256,length(rangeOfImages))
-    print("making the average ...")
-    print(dim(downSampledImage))
-    if (outputType == 'dff'){
-      average <- average + makeDFF(downSampledImage,
-                                   xyzDimOrder = c(1,2,3),
-                                   backgroundSlices=presentationList2[[stimulus]]$backgroundSlices)
-      
-    } else {
-      average <- average + downSampledImage
+  } else {
+    
+    for (stimulus in seq(from=i,to=20,by=4)){
+      start<-presentationList2[[stimulus]]$start
+      end<-presentationList2[[stimulus]]$end
+      rangeOfImages<-seq(from=start,to=end,by=presentationList2[[stimulus]]$timeResampled)
+      print("downsampling...\n")
+      print(dim(average))
+      downSampledImage<-apply(
+        imageDataSlice[rangeOfImages,,,,],
+        1,
+        function(x) resizeImage(x,350,256))
+      dim(downSampledImage)<-c(350,256,length(rangeOfImages))
+      print("making the average ...")
+      print(dim(downSampledImage))
+      if (outputType == 'dff'){
+        average <- average + makeDFF(downSampledImage,
+                                     xyzDimOrder = c(1,2,3),
+                                     backgroundSlices=presentationList2[[stimulus]]$backgroundSlices)
+        
+      } else {
+        average <- average + downSampledImage
+      }
     }
+    average<-average/length(seq(from=i,to=20,by=4))
+    write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_dff_stim",i,".nrrd",sep="")))
+    
   }
-  average<-average/length(seq(from=i,to=20,by=4))
-  write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_dff_stim",i,".nrrd",sep="")))
   
 }
 
 file.h5$close()
+imageDataSlice$close()
