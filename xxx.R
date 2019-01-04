@@ -87,110 +87,41 @@ filePath<-""
 # things. This will require breaking some other things, but that can 
 # be dealt with later.
 
-# TODO: 
-# - Get an inout dir or vector of dirs. 
-# - Read the HDF5 file to find the green flashes.
-# - Read the logs to get the needed offset
-# - Read the logs to get the frames that start each
-# - Process the stimulus presentations
-
-file.h5 <- H5File$new(myFile, mode = "r+")
-imageDataSlice<-file.h5[["imagedata"]]
-
-#################
-## Green Flash ##
-#################
-# - Read the HDF5 file to find the green flashes.
-flashmean <- mean(imageDataSlice[1:100,,,10:20,10:20])
-flashsd <- sd(imageDataSlice[1:100,,,10:20,10:20])
-
-slicesWithBigNumbers.begin <- c()
-for (i in 1:100){
-  if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
-    slicesWithBigNumbers.begin <- c(slicesWithBigNumbers.begin,i)
+average<-array(data=0,dim = c(350,256,1801))
+# Now I want just one average that isn't downsampled in time
+for (stimulus in seq(from=4,to=20,by=4)){
+  start <- (presentationList2[[stimulus]]$start)
+  end <- (presentationList2[[stimulus]]$end)
+  rangeOfImages<-seq(from=start,to=end)
+  print("downsampling...")
+  downSampledImage<-apply(
+    imageDataSlice[rangeOfImages,,,,],
+    1,
+    function(x) resizeImage(x,350,256))
+  dim(downSampledImage)<-c(350,256,length(rangeOfImages))
+  print("making the average ...")
+  print(dim(downSampledImage))
+  if (outputType == 'dff'){
+    average <- average + makeDFF(downSampledImage,
+                                 xyzDimOrder = c(1,2,3),
+                                 backgroundSlices=c(1:100))
+    
+  } else {
+    average <- average + downSampledImage
   }
 }
+average<-average/length(seq(from=4,to=20,by=4))
+write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_dff_fullTime_stim","4",".nrrd",sep="")))
 
-startOfStimulations <- max(slicesWithBigNumbers.begin) # last slice of starting green flash
-# get the salient frames for the second green flash 
-
-slicesWithBigNumbers.end <- c()
-for (i in (33001-2000):33001){
-  if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
-    slicesWithBigNumbers.end <- c(slicesWithBigNumbers.end,i)
-  }
-}
-endOfStimulations <- min(slicesWithBigNumbers.end) # first slice of ending flash
-
-endOfFirstGreenFlash <- startOfStimulations + 1
-
-# - Read the logs to get the needed offset
-# source(file.path(LSMCodeRConfig$srcdir,'stimLogParser.R')) # first the stim log
-# source(file.path(LSMCodeRConfig$srcdir,'LSMLogParser.R')) # next the LSM log
-# # there now exists an array `lsm.transition.frames` with the starting frame of each new stimuls set
-# # Previously in physiologyScript.R I would create a list `presentationList2` that could in principle be used to make a best estimate/guess of these times. Now I have them explicitly, so I could set up presentation list much more easily now.
-
-presentationList2<-list()
-count=1
-for (block in 0:4){
-  for (stimulus in 0:3){
-    print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
-    x <- lsm.transition.frames[count]
-    y <- x + (stimulusPeriod + 200)
-    presentationList2[[count]]<-list("block"=block+1,
-                                    "stimulus"=stimulus+1,
-                                    "start"=x,
-                                    "end"=y,
-                                    "stimulusPeriod"=stimulusPeriod,
-                                    "analysisWindow"=analysisWindow,
-                                    "outFile"=file.path(outDir,
-                                                        paste("stimulus_bar-",
-                                                              stimulus+1,
-                                                              "-for_stimulus_block-",
-                                                              block+1,
-                                                              ".nrrd",
-                                                              sep="")
-                                    )
-                                    ,"backgroundSlices"=backgroundSlices,
-                                    "resize"=c(350,256),
-                                    "timeResampled"=downSampleInTime)
-    print(x)
-    print(y)
-    count=count+1
-  }
+outDir<-"F:/Imaging/GCaMP7_tests/outputNRRDs/"
+physioDirs <- dir("F:/Imaging/GCaMP7_tests/20181204-g7",patt='SP',full=T)
+for (physioDir in physioDirs){
+  lsmLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="lsmlog_")
+  stimLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="stimlog_")
+  myFile <- dir(file.path(physioDir),full=T,rec=F,patt=".mat")
+  outDirSubDir <- basename(physioDir)
+  source(file.path(LSMCodeRConfig$srcdir,"physiologyScript.R"))
 }
 
-# outputType <- c('raw','dff')
-outputType <- 'dff'
-count2 = 1
-for (block in 0:4){
-  for (stimulus in 0:3){
-    if (file.exists(presentationList2[[count2]]$outFile)) {
-      print(paste(presentationList2[[count2]]$outFile,
-                  "already exists. Skipping."))
-      next()
-    }
-    print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
-    x <- presentationList2[[count2]]$start
-    y <- presentationList2[[count2]]$end
-    print(x)
-    print(y)
-    if (!dryRun) {    
-      rangeOfImages<-seq(from=x,to=y,by=presentationList2[[count2]]$timeResampled)
-      downSampledImage<-apply(
-        imageDataSlice[rangeOfImages,,,,],
-        1,
-        function(x) resizeImage(x,350,256))
-      dim(downSampledImage)<-c(350,256,length(rangeOfImages))
-      write.nrrd(
-        ifelse(
-          outputType == 'dff',
-            makeDFF(downSampledImage,
-                  xyzDimOrder = c(1,2,3),
-                  backgroundSlices=presentationList2[[count2]]$backgroundSlices),
-            downSampledImage),
-        presentationList2[[count2]]$outFile)
-    }  
-    count2 <- count2 + 1
-  }
-}
+
+
