@@ -1,7 +1,7 @@
-logdir<-"F:\\Imaging\\GCaMP7_tests\\20181204-g7\\20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP\\logs"
-logFile <- file.path(logdir,"stimlog_2018_12_04_12_21_05.txt")
+# logdir<-"F:\\Imaging\\GCaMP7_tests\\20181204-g7\\20181204-gcamp7F-7d-SabineBars-1plane-Plane41SP\\logs"
+# stimLogFile <- file.path(logdir,"stimlog_2018_12_04_12_21_05.txt")
 
-stimLog <- readLines(logFile, warn=FALSE)
+stimLog <- readLines(stimLogFile, warn=FALSE)
 stimLogCleaning1 <- stimLog[
   grep("@log",stimLog):length(stimLog)][grep("[[:graph:]]* [[:graph:]]* [[:graph:]]*|bar$|green$|red$",
                                                                        stimLog[grep("@log",stimLog):length(stimLog)])]

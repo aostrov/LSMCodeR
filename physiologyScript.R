@@ -60,6 +60,10 @@ endOfStimulations <- min(slicesWithBigNumbers.end) # first slice of ending flash
 
 endOfFirstGreenFlash <- startOfStimulations + 1
 
+
+source(file.path(LSMCodeRConfig$srcdir,"stimLogParser.R"))
+source(file.path(LSMCodeRConfig$srcdir,"LSMLogParser.R"))
+
 ##################
 ## Doing Things ##
 ##################
