@@ -130,3 +130,56 @@ intensityProjection<-function(imageDataArray,rowColumn=c(3,2),projectionType=c("
     apply(imageDataArray, rowColumn, match.fun(projectionType))
   }
 }
+
+#########################
+## Display of analysis ##
+#########################
+
+# When presented with a list of values over time, make a silly animated plot
+# using ggplot
+#
+# takes a two column CSV file (preferably exported directly out of imageJ),
+# with a first column X that has frames from a time series, and second
+# column Y that has the grey level indicated
+# also takes an outdir, where the animated gif will be saved
+# Warning: requires imagemagick to be installed, and will not warn if it is
+# not installed and in the path, so I have no idea how this will work on
+# windows!!!
+# There are also lots of other things that can be tweaked when either making
+# the ggplots (size and color of the dot, output file type, x&y labels),
+# or when making the gif (duration of frames, looping characteristics,
+# and output size). 
+# ... also provides options for read.csv().
+#
+# At the moment this saves each frame to a temporary directory and then deletes
+# the directory at the end of the function.
+# This should create Gifs of up to 9999 frames without getting things out
+# of order, though I haven't tested that yet.
+animatedTimeSeries <- function(timeSeriesFile,
+                               outdir,
+                               ylab="dF/F",
+                               xlab="Frame (100ms/frame)",
+                               color="red",
+                               size=2,
+                               fps=10,
+                               outputX=480,
+                               outputY=270,
+                               resolution=96,
+                               ...) {
+  outputType<-match.arg(outputType)
+  csv<-read.csv(timeSeriesFile,...)
+    img <- image_graph(outputX, outputY, res = resolution)
+    out <- sapply(c(1:nrow(csv)),makeGIFWithMagick,csv,ylab=ylab,xlab=xlab,color=color,size=size)
+    dev.off()
+    animation <- image_animate(img, fps = fps)
+    image_write(animation, file.path(outdir,paste(basename(timeSeriesFile),".gif")))
+}
+
+makeGIFWithMagick <- function(frameNumber,dataCSV,ylab="Y",xlab="X",color="yellow",size=5) {
+  test <- ggplot(data=dataCSV,aes(X,Y)) +
+    geom_point() + 
+    ylab(ylab) +
+    xlab(xlab) +
+    geom_point(data=dataCSV[frameNumber,], color=color,size=size)
+  print(test)
+}

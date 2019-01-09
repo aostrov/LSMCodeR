@@ -123,39 +123,3 @@ for (physioDir in physioDirs){
   source(file.path(LSMCodeRConfig$srcdir,"physiologyScript.R"))
 }
 
-# When presented with a list of values over time, make a silly animated plot
-# using ggplot
-# 
-animatedTimeSeries <- function(timeSeriesFile,
-                               outdir,
-                               ylab="dF/F",
-                               xlab="Frame (100ms/frame)",
-                               color="red",
-                               outputType=c("pdf","tiff","png","bmp","svg"),
-                               ...) {
-  outputType<-match.arg(outputType)
-  csv<-read.csv(timeSeriesFile,...)
-  # here I should make a temp dir to store the individual files
-   # tempDir<-file.path(outdir,'tempdir')
-   # dir.create(tempDir)
-  p = ggplot(data=csv,aes(X,Y))
-  for (i in 1:nrow(csv)){
-    p + geom_point() + 
-      ylab(ylab) + 
-      xlab(xlab) + 
-      geom_point(data=csv[i,], color=color)
-    ggsave(file.path(outdir,
-                     paste(basename(timeSeriesFile),
-                           "-",
-                           i,
-                           ".",
-                           outputType,
-                           sep="")
-    ))
-  }
- # here i should formulate a call to imagemagick to make a gif from the assembled files
-  # system("convert -delay 0.1 -loop 1 /Users/aostrov/projects/R/OrgerLab/LSMCodeR/stuff/Average_dff_stim3_90-181_median3d_cellBody.csv-*.png -scale 480x270 /Users/aostrov/projects/R/OrgerLab/LSMCodeR/stuff/test.gif")
- # here I should delete the temp dir and just keep the final image
-  # unlink(tempDir)
-}
-
