@@ -166,7 +166,6 @@ animatedTimeSeries <- function(timeSeriesFile,
                                outputY=270,
                                resolution=96,
                                ...) {
-  outputType<-match.arg(outputType)
   csv<-read.csv(timeSeriesFile,...)
     img <- image_graph(outputX, outputY, res = resolution)
     out <- sapply(c(1:nrow(csv)),makeGIFWithMagick,csv,ylab=ylab,xlab=xlab,color=color,size=size)
