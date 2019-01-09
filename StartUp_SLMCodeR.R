@@ -5,7 +5,7 @@
 require("xml2")
 require('hdf5r')
 require('nat')
-require('magick')
+require("magick")
 require('ggplot2')
 
 LSMCodeRConfig<-list()

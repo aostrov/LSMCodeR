@@ -167,11 +167,16 @@ animatedTimeSeries <- function(timeSeriesFile,
                                resolution=96,
                                ...) {
   csv<-read.csv(timeSeriesFile,...)
+  outfile <- file.path(outdir,paste(basename(timeSeriesFile),".gif",sep=""))
     img <- image_graph(outputX, outputY, res = resolution)
     out <- sapply(c(1:nrow(csv)),makeGIFWithMagick,csv,ylab=ylab,xlab=xlab,color=color,size=size)
     dev.off()
     animation <- image_animate(img, fps = fps)
-    image_write(animation, file.path(outdir,paste(basename(timeSeriesFile),".gif")))
+    # file.create(file.path(outdir,"test.gif"))
+    # con<-file(file.path(outdir,"test.gif"),"wb")
+    image_write(animation, outfile)
+    # close(con)
+    return(animation)
 }
 
 makeGIFWithMagick <- function(frameNumber,dataCSV,ylab="Y",xlab="X",color="yellow",size=5) {
