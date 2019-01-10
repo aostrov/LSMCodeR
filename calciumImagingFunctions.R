@@ -40,6 +40,25 @@ makeDFF<-function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
   return(testSliceDFF)
 }
 
+makeDFFwithBaselineSubtraction <- function(imageStack,baselineSlices=c(50:101),backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
+  zdim<-dim(imageStack)[xyzDimOrder[3]]
+  xdim<-dim(imageStack)[xyzDimOrder[1]]
+  ydim<-dim(imageStack)[xyzDimOrder[2]]
+  
+  outsideFishROIBackground <- mean(apply(imageStack[1:10,1:10,baselineSlices],3,mean))
+  testSliceBackgroundSubtractROI <- (imageStack[,,] - outsideFishROIBackground)
+  dim(testSliceBackgroundSubtractROI)<-c(xdim,ydim,zdim)
+  
+  testSliceBackground<-apply(testSliceBackgroundSubtractROI[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),mean)
+  testSliceBackgroundSubtract<-apply(testSliceBackgroundSubtractROI[,,],3,function(x) x-testSliceBackground)
+  dim(testSliceBackgroundSubtract)<-c(xdim,ydim,zdim)
+  
+  testSliceDFF<-apply(testSliceBackgroundSubtract, 3, function(x) x/testSliceBackground)
+  dim(testSliceDFF)<-c(xdim,ydim,zdim)
+  
+  return(testSliceBackgroundSubtract)
+}
+
 resizeImage = function(img, new_width, new_height, func=c("spline","linear")) {
   func=match.arg(func)
   if (func=="linear") func<-"approx"

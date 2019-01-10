@@ -123,7 +123,7 @@ for (block in 0:4){
       dim(downSampledImage)<-c(350,256,length(rangeOfImages))
       if (outputType == 'dff'){
         write.nrrd(
-          makeDFF(downSampledImage,
+          makeDFFwithBaselineSubtraction(downSampledImage,
                   xyzDimOrder = c(1,2,3),
                   backgroundSlices=presentationList2[[count2]]$backgroundSlices),
           file.path(presentationList2[[count2]]$outDir,
