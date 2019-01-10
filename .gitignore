@@ -1,5 +1,5 @@
 # R nonsense
-.Rproj.user/*
+.Rproj.user
 .Rhistory
 .RData
 
