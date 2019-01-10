@@ -1,2 +1,7 @@
+# R nonsense
 .Rproj.user/*
 .Rhistory
+.RData
+
+# Nonsense from my laptop
+stuff/*
