@@ -160,56 +160,6 @@ mapply(function(x, i) {
   write.nrrd(stimAvg,file.path(outDir,outDirSubDir,paste("Average_dff_stim",i,".nrrd",sep="")))
   }, averageList, c(1:4))
 
-# average<-average/length(seq(from=i,to=20,by=4))
-# write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_dff_stim",i,".nrrd",sep="")))
-# 
-# # Get averages
-# # I want to be able to look through the list and get a sublist that can
-# # be used to perform functions on them, such as averaging.
-# # I should also decide if I want to store any raw data in this list, 
-# # although that might be too heavy a solution for memory usage. Better
-# # might be either lots of reading in and out from the file system nrrds, or 
-# # to continue using the HDF5 connection for subsetting things.
-# stim1<-c(1,5,9,13,17)
-# stim2<-c(2,6,10,14,18)
-# stim3<-c(3,7,11,15,19)
-# stim4<-c(4,8,12,16,20)
-# for(i in 1:4){
-#   print(seq(from=i,to=20,by=4))
-#   average<-array(data=0,dim = c(350,256,181))
-#   # dim(average)<-c(350,256,181)
-#   if (file.exists(file.path(outDir,outDirSubDir,paste("Average_dff_stim",i,".nrrd",sep="")))) {
-#     print(paste(outDir,outDirSubDir,paste("Average_stim",i,".nrrd already exists. Skipping.",sep="")))
-#   } else {
-#     
-#     for (stimulus in seq(from=i,to=20,by=4)){
-#       start<-presentationList2[[stimulus]]$start
-#       end<-presentationList2[[stimulus]]$end
-#       rangeOfImages<-seq(from=start,to=end,by=presentationList2[[stimulus]]$timeResampled)
-#       print("downsampling...\n")
-#       print(dim(average))
-#       downSampledImage<-apply(
-#         imageDataSlice[rangeOfImages,,,,],
-#         1,
-#         function(x) resizeImage(x,350,256))
-#       dim(downSampledImage)<-c(350,256,length(rangeOfImages))
-#       print("making the average ...")
-#       print(dim(downSampledImage))
-#       if (outputType == 'dff'){
-#         average <- average + makeDFFwithBaselineSubtraction(downSampledImage,
-#                                      xyzDimOrder = c(1,2,3),
-#                                      backgroundSlices=presentationList2[[stimulus]]$backgroundSlices)
-#         
-#       } else {
-#         average <- average + downSampledImage
-#       }
-#     }
-#     average<-average/length(seq(from=i,to=20,by=4))
-#     write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_dff_stim",i,".nrrd",sep="")))
-#     
-#   }
-#   
-# }
 
 file.h5$close()
 imageDataSlice$close()
