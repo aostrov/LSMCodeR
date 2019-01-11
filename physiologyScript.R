@@ -77,21 +77,23 @@ for (block in 0:4){
     print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
     x <- lsm.transition.frames[count]
     y <- x + (stimulusPeriod + 200)
-    presentationList2[[count]]<-list("block"=block+1,
-                                     "stimulus"=stimulus+1,
+    presentationList2[[count]]<-list("this.block"=block+1,
+                                     "this.stimulus"=stimulus+1,
                                      "start"=x,
                                      "end"=y,
-                                     "stimulusPeriod"=stimulusPeriod,
-                                     "analysisWindow"=analysisWindow,
-                                     "outDir"=file.path(outDir,outDirSubDir),
+                                     "this.stimulusPeriod"=stimulusPeriod,
+                                     "this.analysisWindow"=analysisWindow,
+                                     "numberOfSlices"=(((y-x)/downSampleInTime)+1),
+                                     "this.outDir"=file.path(outDir,outDirSubDir),
                                      "fileBaseName"=paste("stimulus_bar-",
                                                       stimulus+1,
                                                       "-for_stimulus_block-",
                                                       block+1,
                                                       sep=""),
-                                     "backgroundSlices"=backgroundSlices,
+                                     "this.backgroundSlices"=backgroundSlices,
                                      "resize"=c(350,256),
-                                     "timeResampled"=downSampleInTime)
+                                     "timeResampled"=downSampleInTime,
+                                     "creationDate"=date())
     print(x)
     print(y)
     count=count+1
@@ -101,16 +103,15 @@ for (block in 0:4){
 # Write individual files for each stimulus presentation
 # outputType <- c('raw','dff')
 outputType <- 'dff'
+blockCount <- 0
 count2 = 1
 # make a fragile list to help speed up making of averages
-averageList <- list(
-  array(data=0,dim = c(350,256,181)),
-  array(data=0,dim = c(350,256,181)),
-  array(data=0,dim = c(350,256,181)),
-  array(data=0,dim = c(350,256,181))
-  )
+averageList <- list()
 for (block in 0:4){
   for (stimulus in 0:3){
+    if (blockCount==0) {
+      averageList[[stimulus+1]] <- array(data=0,dim = c(350,256,181))
+    }
     if (file.exists(file.path(presentationList2[[count2]]$outDir,paste(presentationList2[[count2]]$fileBaseName,"_dff.nrrd",sep="")))) {
       print(paste(presentationList2[[count2]]$fileBaseName,"_dff.nrrd",
                   "already exists. Skipping."))
@@ -154,6 +155,7 @@ for (block in 0:4){
     }  
     count2 <- count2 + 1
   }
+  blockCount=blockCount+1
 }
 mapply(function(x, i) {
   stimAvg <- x/5
