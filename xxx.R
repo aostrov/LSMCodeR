@@ -119,7 +119,29 @@ physioDirs <- dir("F:/Imaging/GCaMP7_tests/20181204-g7",patt='SP',full=T)
   lsmLogFile <- dir(file.path(physioDirs[4],"logs"),full=T,rec=F,patt="lsmlog_")
   stimLogFile <- dir(file.path(physioDirs[4],"logs"),full=T,rec=F,patt="stimlog_")
   myFile <- dir(file.path(physioDirs[4]),full=T,rec=F,patt=".mat")
-  outDirSubDir <- paste(basename(physioDirs[4]),"_test",sep="")
+  outDirSubDir <- paste(basename(physioDirs[4]),"_withDFF2_betterAvg/",sep="")
   source(file.path(LSMCodeRConfig$srcdir,"physiologyScript.R"))
 # }
 
+matFile <- "F:/Imaging/GCaMP7_tests/20190109-jGCaMP7fEF05-testFish1-SP/20190109-jGCaMP7fEF05-testFish1-SP.mat"
+file.h5 <- H5File$new(file.path(matFile), mode = "r")
+imageDataSlice<-file.h5[['imagedata']]
+
+imageDataSlice$dims
+# frames channels slices rows  columns
+# 33001     1        1    512   700
+
+rangeOfImages <- c(15000:20000)
+downSampledImage<-apply(
+  imageDataSlice[rangeOfImages,,,,],
+  1,
+  function(x) resizeImage(x,350,256))
+dim(downSampledImage)<-c(350,256,length(rangeOfImages))
+
+# testSliceBackground <- apply(imageStack[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),mean)
+
+
+
+xxx <- makeDFF2(downSampledImage,
+                xyzDimOrder = c(1,2,3),
+                backgroundSlices = 100:200)

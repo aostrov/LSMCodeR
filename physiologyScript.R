@@ -134,7 +134,7 @@ for (block in 0:4){
           xyzDimOrder = c(1,2,3),
           backgroundSlices=presentationList2[[count2]]$backgroundSlices
           )
-        averageList[[stimulus]] <- averageList[[stimulus]] + dffImage
+        averageList[[(stimulus+1)]] <- averageList[[(stimulus+1)]] + dffImage
         write.nrrd(
           dffImage,
           file.path(presentationList2[[count2]]$outDir,
@@ -155,7 +155,7 @@ for (block in 0:4){
     count2 <- count2 + 1
   }
 }
-mapply(function(x) {
+mapply(function(x, i) {
   stimAvg <- x/5
   write.nrrd(stimAvg,file.path(outDir,outDirSubDir,paste("Average_dff_stim",i,".nrrd",sep="")))
   }, averageList, c(1:4))
