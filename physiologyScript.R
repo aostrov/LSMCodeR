@@ -178,7 +178,7 @@ for(i in 1:4){
       print("making the average ...")
       print(dim(downSampledImage))
       if (outputType == 'dff'){
-        average <- average + makeDFF(downSampledImage,
+        average <- average + makeDFFwithBaselineSubtraction(downSampledImage,
                                      xyzDimOrder = c(1,2,3),
                                      backgroundSlices=presentationList2[[stimulus]]$backgroundSlices)
         
