@@ -86,6 +86,22 @@ downSampleMean2x2<-function(imageData){
   return(t(round(smallArray)))
 }
 
+getBaseline <- function(imageStack,rangeOfFrames=NULL,xyzDimOrder=c(3,2,1),x=1,width=10,y=1,height=10,dimension=1) {
+  zdim<-dim(imageStack)[xyzDimOrder[3]]
+  xdim<-dim(imageStack)[xyzDimOrder[1]]
+  ydim<-dim(imageStack)[xyzDimOrder[2]]
+
+  if (is.null(rangeOfFrames)){
+    rangeOfFrames <- c( round((zdim[1] * 0.25)) , round((zdim[1] * 0.75)) )
+  } else {
+    if (!all(rangeOfFrames%in%c(1:zdim[1])))
+      rangeOfFrames <- c( round((zdim[1] * 0.25)) , round((zdim[1] * 0.75)) )
+    warning("\n'rangeOfFrames' is outside of the bounds of the array.\nSetting rangeOfFrames to the quartiles")
+  }
+  
+  return(floor(mean(imageStack[rangeOfFrames,(y:(y+height)),(x:(x+width))])))
+}
+
 ###############################
 ## Average of Anatomy Stacks ##
 ###############################
