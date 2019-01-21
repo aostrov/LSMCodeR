@@ -66,14 +66,15 @@ makeSNRByPixel<-function(imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,
   ydim<-dim(imageStack)[xyzDimOrder[2]]
   
   
-  noise <- apply(imageStack[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),calcSNR.vector)
+  noise <- apply(imageStack[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),calcSNR.noise)
   snr <- apply(imageStack,xyzDimOrder[3],function(x) {x/noise} )
   dim(snr) <- c(xdim,ydim,zdim)
   return(snr)
 }
 
-calcSNR.vector <- function(vector) {
-  sqrt(sd(diff(vector)))
+calcSNR.noise <- function(vector) {
+  noise <- ((sd(diff(vector)))/sqrt(2))
+  return(noise)
 }
 
 
@@ -102,6 +103,18 @@ downSampleMean2x2<-function(imageData){
   }
   dim(smallArray)<-dimImageData/2
   return(t(round(smallArray)))
+}
+
+returnOffsetedImage <- function(imageData,xyzDimOrder=c(1,2,3),offsetValue,setFloor=TRUE) {
+  zdim<-dim(imageData)[xyzDimOrder[3]]
+  xdim<-dim(imageData)[xyzDimOrder[1]]
+  ydim<-dim(imageData)[xyzDimOrder[2]]
+  
+  imageData <- imageData - offsetValue
+  
+  if (setFloor) imageData[imageData < 0] = 0
+  
+  return(imageData)
 }
 
 getBaseline <- function(imageStack,rangeOfFrames=NULL,xyzDimOrder=c(3,2,1),x=1,width=10,y=1,height=10,dimension=1) {

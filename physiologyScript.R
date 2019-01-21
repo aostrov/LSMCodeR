@@ -153,7 +153,7 @@ for (block in 0:4){
         )
         
       } else if (outputType=="snr") {
-        offsetCorrected <- (downSampledImage - pixelOffset)
+        offsetCorrected <- returnOffsetedImage(downSampledImage,offsetValue=pixelOffset)
         write.nrrd(makeSNRByPixel(offsetCorrected,
                        backgroundSlices=presentationList2[[count2]]$backgroundSlices),
                    file=file.path(presentationList2[[count2]]$outDir,
