@@ -115,13 +115,13 @@ write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_dff_fullTime_sti
 
 outDir<-"F:/Imaging/GCaMP7_tests/outputNRRDs/"
 physioDirs <- dir("F:/Imaging/GCaMP7_tests/20181204-g7",patt='SP',full=T)
-# for (physioDir in physioDirs){
-  lsmLogFile <- dir(file.path(physioDirs[4],"logs"),full=T,rec=F,patt="lsmlog_")
-  stimLogFile <- dir(file.path(physioDirs[4],"logs"),full=T,rec=F,patt="stimlog_")
-  myFile <- dir(file.path(physioDirs[4]),full=T,rec=F,patt=".mat")
-  outDirSubDir <- paste(basename(physioDirs[4]),"_withDFF2_betterAvg/",sep="")
+for (physioDir in physioDirs[4:6]){
+  lsmLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="lsmlog_")
+  stimLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="stimlog_")
+  myFile <- dir(file.path(physioDir),full=T,rec=F,patt=".mat")
+  outDirSubDir <- paste(basename(physioDir),"_snrOffset398/",sep="")
   source(file.path(LSMCodeRConfig$srcdir,"physiologyScript.R"))
-# }
+}
 
 matFile <- "F:/Imaging/GCaMP7_tests/20190109-jGCaMP7fEF05-testFish1-SP/20190109-jGCaMP7fEF05-testFish1-SP.mat"
 file.h5 <- H5File$new(file.path(matFile), mode = "r")
@@ -145,3 +145,68 @@ dim(downSampledImage)<-c(350,256,length(rangeOfImages))
 xxx <- makeDFF2(downSampledImage,
                 xyzDimOrder = c(1,2,3),
                 backgroundSlices = 100:200)
+
+file.h5 <- H5File$new(myFile, mode = "r+")
+# save a new variable that contains the image data
+# this step can be avoided, and might improve performance on very large datasets
+imageDataSlice<-file.h5[["imagedata"]]
+
+
+
+
+
+x = 348
+y = 884
+width = 37
+height = 33
+
+imageStack <- aperm(imageDataSlice[13:1813,,,(y:(y+height)),(x:(x+width))],c(3,2,1))
+outsideFishROIBackground <- floor(mean(apply(imageDataSlice[200:2200,,,1:10,1:10],3,mean)))
+myImage.cropped.baselineCorrected <- (imageStack - outsideFishROIBackground)
+# dim(myImage.cropped.baselineCorrected)<-c(xdim,ydim,zdim)
+roi.average <- apply(myImage.cropped.baselineCorrected,3,mean)
+
+ myImage<-imageDataSlice[rangeOfImages,,,,]
+ myImage <- aperm(myImage,c(2,3,1))
+ myImage <- aperm(myImage,c(2,1,3))
+ write.nrrd(myImage,"C:/Users/Aaron/Desktop/raw.nrrd")
+ write.nrrd((myImage-407),"C:/Users/Aaron/Desktop/baselineSubtracted.nrrd")
+ baselineSubtracted <- myImage-407
+ background <- apply(baselineSubtracted[,,c(75:85)],c(1,2),mean)
+ write.nrrd(background,"C:/Users/Aaron/Desktop/background.nrrd")
+ background.raw <- apply(myImage[,,c(75:85)],c(1,2),mean)
+ write.nrrd(background.raw,"C:/Users/Aaron/Desktop/background_raw.nrrd")
+ df.raw <- apply(myImage[,,],3,function(x) x-round(background.raw))
+ write.nrrd(df.raw,"C:/Users/Aaron/Desktop/df_raw.nrrd")
+ df.offset <- apply(myImage[,,],3,function(x) x-round(background))
+ write.nrrd(df.offset,"C:/Users/Aaron/Desktop/df_offset.nrrd")
+ dim(df.raw) <- c(700,1024,181)
+ dim(df.offset) <- c(700,1024,181)
+ write.nrrd(df.raw,"C:/Users/Aaron/Desktop/df_raw.nrrd")
+ write.nrrd(df.offset,"C:/Users/Aaron/Desktop/df_offset.nrrd")
+ dff.raw <- apply(df.raw, 3, function(x) x/background.raw)
+ dim(dff.raw) <- c(700,1024,181)
+ dff.offset <- apply(df.offset, 3, function(x) x/background)
+ write.nrrd(dff.offset,"C:/Users/Aaron/Desktop/dff_offset.nrrd")
+ dim(dff.offset) <- c(700,1024,181)
+ write.nrrd(dff.offset,"C:/Users/Aaron/Desktop/dff_offset.nrrd")
+ write.nrrd(dff.raw,"C:/Users/Aaron/Desktop/dff_raw.nrrd")
+ makeDFFwithBaselineSubtraction(myImage,xyzDimOrder = c(1,2,3),backgroundSlices = c(75:85))
+ myImage.dff <- makeDFFwithBaselineSubtraction(myImage,xyzDimOrder = c(1,2,3),backgroundSlices = c(75:85))
+ write.nrrd(myImage.dff,"C:/Users/Aaron/Desktop/myImage.dff.nrrd")
+ myImage.dff <- makeDFFwithBaselineSubtraction(myImage,xyzDimOrder = c(1,2,3),backgroundSlices = c(75:85))
+ write.nrrd(myImage.dff,"C:/Users/Aaron/Desktop/myImage.dff.nrrd")
+ 
+ 
+makeDFF<-function(imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,3)){
+ zdim<-dim(imageStack)[xyzDimOrder[3]]
+ xdim<-dim(imageStack)[xyzDimOrder[1]]
+ ydim<-dim(imageStack)[xyzDimOrder[2]]
+ testSliceBackground<-apply(imageStack[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),mean)
+ testSliceBackgroundSubtract<-apply(imageStack[,,],3,function(x) x-testSliceBackground)
+ dim(testSliceBackgroundSubtract)<-c(xdim,ydim,zdim)
+ testSliceDFF<-apply(testSliceBackgroundSubtract, 3, function(x) x/testSliceBackground)
+ dim(testSliceDFF)<-c(xdim,ydim,zdim)
+ return(testSliceDFF)
+}
+ 
