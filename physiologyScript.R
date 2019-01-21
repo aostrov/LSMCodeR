@@ -36,6 +36,9 @@ imageDataSlice<-file.h5[["imagedata"]]
 # file.h5$close()
 # data is in the form:
 # [stacks,(channels),slices,rows, columns]
+imageDataSlice.dims <- imageDataSlice$dims
+# frames channels slices rows  columns
+# 33001     1        1    512   700
 
 #################
 ## Green Flash ##
@@ -103,8 +106,8 @@ for (block in 0:4){
 }
 
 # Write individual files for each stimulus presentation
-# outputType <- c('raw','dff')
-outputType <- 'dff'
+# outputType <- c('raw','dff','snr')
+outputType <- 'snr'
 blockCount <- 0
 count2 = 1
 # make a fragile list to help speed up making of averages
@@ -149,16 +152,24 @@ for (block in 0:4){
           )
         )
         
-      } else {
+      } else if (outputType=="snr") {
+        offsetCorrected <- (downSampledImage - pixelOffset)
+        write.nrrd(makeSNRByPixel(offsetCorrected,
+                       backgroundSlices=presentationList2[[count2]]$backgroundSlices),
+                   file=file.path(presentationList2[[count2]]$outDir,
+                                  paste(presentationList2[[count2]]$fileBaseName,"_snr.nrrd",sep="")),
+                                  dtype="short"
+                   )
+       } else {
         write.nrrd(
-          downSampledImage,
+          offsetCorrected,
           file.path(presentationList2[[count2]]$outDir,
                     paste(presentationList2[[count2]]$fileBaseName,".nrrd",sep="")
           )
         )
         
-      }
-    }  
+        }
+      }  
     count2 <- count2 + 1
   }
   blockCount=blockCount+1

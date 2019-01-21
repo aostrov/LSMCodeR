@@ -40,24 +40,42 @@ makeDFF<-function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
   return(testSliceDFF)
 }
 
-makeDFFwithBaselineSubtraction <- function(imageStack,baselineSlices=c(50:101),backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
+makeDFFwithBaselineSubtraction <- function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1),...){
+  zdim<-dim(imageStack)[xyzDimOrder[3]]
+  xdim<-dim(imageStack)[xyzDimOrder[1]]
+  ydim<-dim(imageStack)[xyzDimOrder[2]]
+
+  offset <- getBaseline(imageStack,...)
+  print(offset)
+  imageStack.offset <- (imageStack - offset)
+  dim(imageStack.offset)<-c(xdim,ydim,zdim)
+  
+  imageStack.offset.F0<-apply(imageStack.offset[,,backgroundSlices],c(1,2),mean)
+  imageStack.offset.F0.F<-apply(imageStack.offset[,,],3,function(x) x-round(imageStack.offset.F0))
+  dim(imageStack.offset.F0.F)<-c(xdim,ydim,zdim)
+  
+  imageStack.offset.F0.F.dff<-apply(imageStack.offset.F0.F, 3, function(x) x/imageStack.offset.F0)
+  dim(imageStack.offset.F0.F.dff)<-c(xdim,ydim,zdim)
+  
+  return(imageStack.offset.F0.F.dff)
+}
+
+makeSNRByPixel<-function(imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,3)){
   zdim<-dim(imageStack)[xyzDimOrder[3]]
   xdim<-dim(imageStack)[xyzDimOrder[1]]
   ydim<-dim(imageStack)[xyzDimOrder[2]]
   
-  outsideFishROIBackground <- mean(apply(imageStack[1:10,1:10,baselineSlices],3,mean))
-  testSliceBackgroundSubtractROI <- (imageStack[,,] - outsideFishROIBackground)
-  dim(testSliceBackgroundSubtractROI)<-c(xdim,ydim,zdim)
   
-  testSliceBackground<-apply(testSliceBackgroundSubtractROI[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),mean)
-  testSliceBackgroundSubtract<-apply(testSliceBackgroundSubtractROI[,,],3,function(x) x-testSliceBackground)
-  dim(testSliceBackgroundSubtract)<-c(xdim,ydim,zdim)
-  
-  testSliceDFF<-apply(testSliceBackgroundSubtract, 3, function(x) x/testSliceBackground)
-  dim(testSliceDFF)<-c(xdim,ydim,zdim)
-  
-  return(testSliceBackgroundSubtract)
+  noise <- apply(imageStack[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),calcSNR.vector)
+  snr <- apply(imageStack,xyzDimOrder[3],function(x) {x/noise} )
+  dim(snr) <- c(xdim,ydim,zdim)
+  return(snr)
 }
+
+calcSNR.vector <- function(vector) {
+  sqrt(sd(diff(vector)))
+}
+
 
 resizeImage = function(img, new_width, new_height, func=c("spline","linear")) {
   func=match.arg(func)
