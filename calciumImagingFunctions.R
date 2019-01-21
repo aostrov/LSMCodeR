@@ -111,9 +111,9 @@ getBaseline <- function(imageStack,rangeOfFrames=NULL,xyzDimOrder=c(3,2,1),x=1,w
 
   if (is.null(rangeOfFrames)){
     rangeOfFrames <- c( round((zdim[1] * 0.25)) , round((zdim[1] * 0.75)) )
-  } else {
-    if (!all(rangeOfFrames%in%c(1:zdim[1])))
-      rangeOfFrames <- c( round((zdim[1] * 0.25)) , round((zdim[1] * 0.75)) )
+  } 
+  if (!all(rangeOfFrames%in%c(1:zdim[1]))) {
+    rangeOfFrames <- c( round((zdim[1] * 0.25)) , round((zdim[1] * 0.75)) )
     warning("\n'rangeOfFrames' is outside of the bounds of the array.\nSetting rangeOfFrames to the quartiles")
   }
   
@@ -163,7 +163,7 @@ doesReorder<-function(testImageArray,reorderImageSlices=c(84:100,1:83)){
 # but this default can be overwritten.
 # Returns a 2D vector of equal length to x*y, where the z dimension has been collapsed.
 #
-# If a multi-frame image is passed as an array form [frames,?,slices,rows,columns]
+# If a multi-frame image is passed as an array form [frames,channels,slices,rows,columns]
 # apply() is used to recursively call intensityProjetion.
 # This returns a 3D vector that has dimensions x*y*f with the z dimension collapsed.
 #
