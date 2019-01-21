@@ -19,6 +19,8 @@ numberOfStimuliInBlock<-4
 dryRun=F
 downSampleInTime<-10
 backgroundSlices=c(75:85)
+resizeFactor <- 2
+pixelOffset <- 398
 
 
 
@@ -91,7 +93,7 @@ for (block in 0:4){
                                                  block+1,
                                                  sep=""),
                                      "backgroundSlices"=backgroundSlices,
-                                     "resize"=c(350,256),
+                                     "resize"=c(imageDataSlice.dims[5]/resizeFactor,imageDataSlice.dims[4]/resizeFactor),
                                      "timeResampled"=downSampleInTime,
                                      "creationDate"=date())
     print(x)
@@ -110,7 +112,11 @@ averageList <- list()
 for (block in 0:4){
   for (stimulus in 0:3){
     if (blockCount==0) {
-      averageList[[stimulus+1]] <- array(data=0,dim = c(350,256,181))
+      averageList[[stimulus+1]] <- array(data=0,
+                                         dim = c(presentationList2[[count2]]$resize[1],
+                                                 presentationList2[[count2]]$resize[2],
+                                                 presentationList2[[count2]]$numberOfSlices)
+                                         )
     }
     if (file.exists(file.path(presentationList2[[count2]]$outDir,paste(presentationList2[[count2]]$fileBaseName,"_dff.nrrd",sep="")))) {
       print(paste(presentationList2[[count2]]$fileBaseName,"_dff.nrrd",
@@ -127,8 +133,8 @@ for (block in 0:4){
       downSampledImage<-apply(
         imageDataSlice[rangeOfImages,,,,],
         1,
-        function(x) resizeImage(x,350,256))
-      dim(downSampledImage)<-c(350,256,length(rangeOfImages))
+        function(x) resizeImage(x,presentationList2[[count2]]$resize[1],presentationList2[[count2]]$resize[2]))
+      dim(downSampledImage)<-c(presentationList2[[count2]]$resize[1],presentationList2[[count2]]$resize[2],length(rangeOfImages))
       if (outputType == 'dff'){
         dffImage <- makeDFFwithBaselineSubtraction(
           downSampledImage,
