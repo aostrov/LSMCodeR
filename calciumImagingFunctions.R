@@ -27,6 +27,20 @@ readLogFileMetaData<-function(logFile){
   return(framedata)
 }
 
+# for presentationList2 it will return the index of which list 
+# element contains a particular stimulus and block pair
+# This is an incredibly stupid function at the moment
+getIndexOfStimulusBlockPair <- function(stimulus,block){
+  which(
+    unlist(
+      lapply(
+        presentationList2, function(x) {
+          x$block==3 & x$stimulus==1
+        }
+      )
+    )
+  )
+}
 
 makeDFF<-function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
   zdim<-dim(imageStack)[xyzDimOrder[3]]
