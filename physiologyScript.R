@@ -75,110 +75,73 @@ source(file.path(LSMCodeRConfig$srcdir,"LSMLogParser.R"))
 ##################
 
 # Make a list of the different stimuli presentations
-presentationList2<-list()
+
 count=1
+
+if (!exists("presentationList2")){
+  presentationList2<-list()
+  for (block in 0:4){
+    for (stimulus in 0:3){
+      print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
+      x <- lsm.transition.frames[count]
+      y <- x + (stimulusPeriod + 200)
+      presentationList2[[count]]<-list("block"=block+1,
+                                       "stimulus"=stimulus+1,
+                                       "start"=x,
+                                       "end"=y,
+                                       "stimulusPeriod"=stimulusPeriod,
+                                       "analysisWindow"=analysisWindow,
+                                       "numberOfSlices"=(((y-x)/downSampleInTime)+1),
+                                       "outDir"=file.path(outDir,outDirSubDir),
+                                       "fileBaseName"=paste("stimulus_bar-",
+                                                   stimulus+1,
+                                                   "-for_stimulus_block-",
+                                                   block+1,
+                                                   sep=""),
+                                       "backgroundSlices"=backgroundSlices,
+                                       "resize"=c(imageDataSlice.dims[5]/resizeFactor,
+                                                  imageDataSlice.dims[4]/resizeFactor),
+                                       "timeResampled"=downSampleInTime,
+                                       "creationDate"=date())
+      print(x)
+      print(y)
+      count=count+1
+    }
+  }
+} else {
+  print("list already exists")
+}
+saveRDS(presentationList2,file=file.path(LSMCodeRConfig$maindir,"presentationList.rds"))
+
 for (block in 0:4){
   for (stimulus in 0:3){
-    print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
-    x <- lsm.transition.frames[count]
-    y <- x + (stimulusPeriod + 200)
-    presentationList2[[count]]<-list("block"=block+1,
-                                     "stimulus"=stimulus+1,
-                                     "start"=x,
-                                     "end"=y,
-                                     "stimulusPeriod"=stimulusPeriod,
-                                     "analysisWindow"=analysisWindow,
-                                     "numberOfSlices"=(((y-x)/downSampleInTime)+1),
-                                     "outDir"=file.path(outDir,outDirSubDir),
-                                     "fileBaseName"=paste("stimulus_bar-",
-                                                 stimulus+1,
-                                                 "-for_stimulus_block-",
-                                                 block+1,
-                                                 sep=""),
-                                     "backgroundSlices"=backgroundSlices,
-                                     "resize"=c(imageDataSlice.dims[5]/resizeFactor,imageDataSlice.dims[4]/resizeFactor),
-                                     "timeResampled"=downSampleInTime,
-                                     "creationDate"=date())
-    print(x)
-    print(y)
-    count=count+1
+
+    processSingleStimulus(myList=presentationList2,
+                            stimulus = stimulus+1,
+                            block = block+1,
+                          writeNRRD = TRUE)
   }
 }
 
-# Write individual files for each stimulus presentation
-# outputType <- c('raw','dff','snr')
-outputType <- 'snr'
-blockCount <- 0
-count2 = 1
-# make a fragile list to help speed up making of averages
-averageList <- list()
-for (block in 0:4){
-  for (stimulus in 0:3){
-    if (blockCount==0) {
-      averageList[[stimulus+1]] <- array(data=0,
-                                         dim = c(presentationList2[[count2]]$resize[1],
-                                                 presentationList2[[count2]]$resize[2],
-                                                 presentationList2[[count2]]$numberOfSlices)
-                                         )
-    }
-    if (file.exists(file.path(presentationList2[[count2]]$outDir,paste(presentationList2[[count2]]$fileBaseName,"_dff.nrrd",sep="")))) {
-      print(paste(presentationList2[[count2]]$fileBaseName,"_dff.nrrd",
-                  "already exists. Skipping."))
-      next()
-    }
-    print(paste("calculating for stimulus bar:",stimulus,"for stimulus block: ",block))
-    x <- presentationList2[[count2]]$start
-    y <- presentationList2[[count2]]$end
-    print(paste("start:",x))
-    print(paste("end:",y))
-    if (!dryRun) {    
-      rangeOfImages<-seq(from=x,to=y,by=presentationList2[[count2]]$timeResampled)
-      downSampledImage<-apply(
-        imageDataSlice[rangeOfImages,,,,],
-        1,
-        function(x) resizeImage(x,presentationList2[[count2]]$resize[1],presentationList2[[count2]]$resize[2]))
-      dim(downSampledImage)<-c(presentationList2[[count2]]$resize[1],presentationList2[[count2]]$resize[2],length(rangeOfImages))
-      offsetCorrected <- returnOffsetedImage(downSampledImage,offsetValue=pixelOffset)
-      if (outputType == 'dff'){
-        dffImage <- makeDFFwithBaselineSubtraction(
-          offsetCorrected,
-          xyzDimOrder = c(1,2,3),
-          backgroundSlices=presentationList2[[count2]]$backgroundSlices
-          )
-        averageList[[(stimulus+1)]] <- averageList[[(stimulus+1)]] + dffImage
-        write.nrrd(
-          dffImage,
-          file.path(presentationList2[[count2]]$outDir,
-                    paste(presentationList2[[count2]]$fileBaseName,"_dff.nrrd",sep="")
-          )
-        )
-        
-      } else if (outputType=="snr") {
-        
-        write.nrrd(makeSNRByPixel(offsetCorrected,
-                       backgroundSlices=presentationList2[[count2]]$backgroundSlices),
-                   file=file.path(presentationList2[[count2]]$outDir,
-                                  paste(presentationList2[[count2]]$fileBaseName,"_snr.nrrd",sep="")),
-                                  dtype="short"
-                   )
-       } else {
-        write.nrrd(
-          offsetCorrected,
-          file.path(presentationList2[[count2]]$outDir,
-                    paste(presentationList2[[count2]]$fileBaseName,".nrrd",sep="")
-          )
-        )
-        
-        }
-      }  
-    count2 <- count2 + 1
-  }
-  blockCount=blockCount+1
-}
-mapply(function(x, i) {
-  stimAvg <- x/5
-  write.nrrd(stimAvg,file.path(outDir,outDirSubDir,paste("Average_dff_stim",i,".nrrd",sep="")))
-  }, averageList, c(1:4))
+######
+# If I want to do an average again
+# blockCount <- 0
+# # make a fragile list to help speed up making of averages
+# averageList <- list()
+# for (block in 0:4){
+#   for (stimulus in 0:3){
+#     if (blockCount==0) {
+#       averageList[[stimulus+1]] <- array(data=0,
+#                                          dim = c(presentationList2[[count2]]$resize[1],
+#                                                  presentationList2[[count2]]$resize[2],
+#                                                  presentationList2[[count2]]$numberOfSlices)
+#                                          )
+#     }
+#   blockCount=blockCount+1
+# mapply(function(x, i) {
+#   stimAvg <- x/5
+#   write.nrrd(stimAvg,file.path(outDir,outDirSubDir,paste("Average_dff_stim",i,".nrrd",sep="")))
+#   }, averageList, c(1:4))
 
 
 file.h5$close()
