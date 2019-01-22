@@ -105,14 +105,14 @@ downSampleMean2x2<-function(imageData){
   return(t(round(smallArray)))
 }
 
-returnOffsetedImage <- function(imageData,xyzDimOrder=c(1,2,3),offsetValue,setFloor=TRUE) {
+returnOffsetedImage <- function(imageData,xyzDimOrder=c(1,2,3),offsetValue,setFloor=TRUE,floor=0) {
   zdim<-dim(imageData)[xyzDimOrder[3]]
   xdim<-dim(imageData)[xyzDimOrder[1]]
   ydim<-dim(imageData)[xyzDimOrder[2]]
   
   imageData <- imageData - offsetValue
   
-  if (setFloor) imageData[imageData < 0] = 0
+  if (setFloor) imageData[imageData < 0] = floor
   
   return(imageData)
 }

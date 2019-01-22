@@ -138,9 +138,10 @@ for (block in 0:4){
         1,
         function(x) resizeImage(x,presentationList2[[count2]]$resize[1],presentationList2[[count2]]$resize[2]))
       dim(downSampledImage)<-c(presentationList2[[count2]]$resize[1],presentationList2[[count2]]$resize[2],length(rangeOfImages))
+      offsetCorrected <- returnOffsetedImage(downSampledImage,offsetValue=pixelOffset)
       if (outputType == 'dff'){
         dffImage <- makeDFFwithBaselineSubtraction(
-          downSampledImage,
+          offsetCorrected,
           xyzDimOrder = c(1,2,3),
           backgroundSlices=presentationList2[[count2]]$backgroundSlices
           )
@@ -153,7 +154,7 @@ for (block in 0:4){
         )
         
       } else if (outputType=="snr") {
-        offsetCorrected <- returnOffsetedImage(downSampledImage,offsetValue=pixelOffset)
+        
         write.nrrd(makeSNRByPixel(offsetCorrected,
                        backgroundSlices=presentationList2[[count2]]$backgroundSlices),
                    file=file.path(presentationList2[[count2]]$outDir,
