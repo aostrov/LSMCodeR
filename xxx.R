@@ -115,11 +115,11 @@ write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_dff_fullTime_sti
 
 outDir<-"F:/Imaging/GCaMP7_tests/outputNRRDs/"
 physioDirs <- dir("F:/Imaging/GCaMP7_tests/20181204-g7",patt='SP',full=T)
-for (physioDir in physioDirs[1:5]){
+for (physioDir in physioDirs[5]){
   lsmLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="lsmlog_")
   stimLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="stimlog_")
   myFile <- dir(file.path(physioDir),full=T,rec=F,patt=".mat")
-  outDirSubDir <- paste(basename(physioDir),"_snrOffset398withoutFloor/",sep="")
+  outDirSubDir <- paste(basename(physioDir),"_functionTest/",sep="")
   source(file.path(LSMCodeRConfig$srcdir,"physiologyScript.R"))
 }
 
@@ -210,17 +210,86 @@ makeDFF<-function(imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,3)){
  return(testSliceDFF)
 }
 
-# for presentationList2 it will return the index of which list 
-# element contains a particular stimulus and block pair
-# This is an incredibly stupid function at the moment
-getIndexOfStimulusBlockPair <- function(stimulus,block){
-  which(
-    unlist(
-      lapply(
-        presentationList2, function(x) {
-          x$block==3 & x$stimulus==1
-        }
-      )
+
+processSingleStimulus <- function(myList,stimulus=1,block=1,
+                                  outputType=c("snr","raw","dff"),writeNRRD=FALSE) {
+  # I'll probably want some kind of checking here for existing
+  # files, etc
+  
+  outputType = match.arg(outputType)
+  i <- getIndexOfStimulusBlockPair(stimulus,block)
+  # print(i)
+  
+  rangeOfImages <- seq(from=myList[[i]]$start,
+                     to=myList[[i]]$end,
+                     by=myList[[i]]$timeResampled)
+  
+  downSampledImage <- apply(
+    imageDataSlice[rangeOfImages,,,,],
+    1,
+    function(x) resizeImage(x,myList[[i]]$resize[1],
+                            myList[[i]]$resize[2]))
+  
+  dim(downSampledImage)<-c(myList[[i]]$resize[1],
+                           myList[[i]]$resize[2],
+                           length(rangeOfImages))
+  
+  offsetCorrected <- returnOffsetedImage(downSampledImage,offsetValue=pixelOffset)
+  
+  if (outputType == 'dff'){
+    offsetCorrected <- makeDFFwithBaselineSubtraction(
+      offsetCorrected,
+      xyzDimOrder = c(1,2,3),
+      backgroundSlices=myList[[i]]$backgroundSlices
     )
-  )
+    
+  } else if (outputType=="snr") {
+    offsetCorrected <- makeSNRByPixel(offsetCorrected,
+                                      backgroundSlices=myList[[i]]$backgroundSlices
+    )
+  }
+  
+  if (writeNRRD){
+    outfile <- file.path(myList[[i]]$outDir,paste(myList[[i]]$fileBaseName,"nrrd",sep="."))
+    # print(paste("Writing to disk: ",outfile,sep=""))
+    write.nrrd(offsetCorrected,file=outfile,dtype="short")
+  }
+  
+  cat("+",fill=10)
+  invisible(offsetCorrected)
+  
+  
 }
+
+write.nrrd(xxx[(x+(0*w)/2):(x+(1*w)/2),(y+(0*h)/2):(y+(1*h)/2),],
+           file="C:/Users/Aaron/Desktop/firstQuarter.nrrd")
+write.nrrd(xxx[(x+(1*w)/2):(x+(2*w)/2),(y+(0*h)/2):(y+(1*h)/2),],
+           file="C:/Users/Aaron/Desktop/secondQuarter.nrrd")
+
+write.nrrd(xxx[(x+(0*w)/2):(x+(1*w)/2),(y+(1*h)/2):(y+(2*h)/2),],
+           file="C:/Users/Aaron/Desktop/thirdQuarter.nrrd")
+
+write.nrrd(xxx[(x+(1*w)/2):(x+(2*w)/2),(y+(1*h)/2):(y+(2*h)/2),],
+           file="C:/Users/Aaron/Desktop/fourthQuarter.nrrd")
+
+zz=10
+count=0
+for (yy in (seq(zz)-1)){
+  for (xx in (seq(zz)-1)){
+    print(paste("xxx[(x+(",xx,"*w)/",zz,"):(x+(",xx+1,"*w)/",zz,"),(y+(",yy,"*h)/",zz,"):(y+(",yy+1,"*h)/",zz,"),]",sep=""
+               ))
+    
+    # write.nrrd(xxx[(x+(xx*w)/zz):(x+(xx+1*w)/zz),(y+(yy*h)/zz):(y+(yy+1*h)/zz),],
+    #            file=paste("C:/Users/Aaron/Desktop/temp/",xx+yy+count,".nrrd",sep=""),
+    #            dtype="short")
+    SNR_f0 <- mean(xxx[(x+(xx*w)/zz):(x+(xx+1*w)/zz),(y+(yy*h)/zz):(y+(yy+1*h)/zz),75:85])
+    print(SNR_f0)
+  }
+  count=count+10
+}
+
+# so instead of writing each thing out, I can try to get a SNR_max-SNR_F0/SNR_f0
+SNR_f0 <- mean(xxx[(x+(xx*w)/zz):(x+(xx+1*w)/zz),(y+(yy*h)/zz):(y+(yy+1*h)/zz),75:85])
+# and I would want to look frame by frame, averaging the frames and then finding the frame
+# with the max signal
+SNR_max.1 <- apply(xxx[(x+(xx*w)/zz):(x+(xx+1*w)/zz),(y+(yy*h)/zz):(y+(yy+1*h)/zz),],c(1,2),mean)
