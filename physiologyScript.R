@@ -126,11 +126,11 @@ for (block in 0:4){
                   "already exists. Skipping."))
       next()
     }
-    print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
+    print(paste("calculating for stimulus bar:",stimulus,"for stimulus block: ",block))
     x <- presentationList2[[count2]]$start
     y <- presentationList2[[count2]]$end
-    print(x)
-    print(y)
+    print(paste("start:",x))
+    print(paste("end:",y))
     if (!dryRun) {    
       rangeOfImages<-seq(from=x,to=y,by=presentationList2[[count2]]$timeResampled)
       downSampledImage<-apply(
