@@ -115,16 +115,16 @@ write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_dff_fullTime_sti
 
 outDir<-"F:/Imaging/GCaMP7_tests/outputNRRDs/"
 physioDirs <- dir("F:/Imaging/GCaMP7_tests/20181204-g7",patt='SP',full=T)
-for (physioDir in physioDirs[4:6]){
+for (physioDir in physioDirs[1:5]){
   lsmLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="lsmlog_")
   stimLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="stimlog_")
   myFile <- dir(file.path(physioDir),full=T,rec=F,patt=".mat")
-  outDirSubDir <- paste(basename(physioDir),"_snrOffset398/",sep="")
+  outDirSubDir <- paste(basename(physioDir),"_snrOffset398withoutFloor/",sep="")
   source(file.path(LSMCodeRConfig$srcdir,"physiologyScript.R"))
 }
 
 matFile <- "F:/Imaging/GCaMP7_tests/20190109-jGCaMP7fEF05-testFish1-SP/20190109-jGCaMP7fEF05-testFish1-SP.mat"
-file.h5 <- H5File$new(file.path(matFile), mode = "r")
+file.h5 <- H5File$new(file.path(myFile), mode = "r")
 imageDataSlice<-file.h5[['imagedata']]
 
 imageDataSlice$dims
@@ -209,4 +209,18 @@ makeDFF<-function(imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,3)){
  dim(testSliceDFF)<-c(xdim,ydim,zdim)
  return(testSliceDFF)
 }
- 
+
+# for presentationList2 it will return the index of which list 
+# element contains a particular stimulus and block pair
+# This is an incredibly stupid function at the moment
+getIndexOfStimulusBlockPair <- function(stimulus,block){
+  which(
+    unlist(
+      lapply(
+        presentationList2, function(x) {
+          x$block==3 & x$stimulus==1
+        }
+      )
+    )
+  )
+}
