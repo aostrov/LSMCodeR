@@ -31,15 +31,17 @@ readLogFileMetaData<-function(logFile){
 # element contains a particular stimulus and block pair
 # This is an incredibly stupid function at the moment
 getIndexOfStimulusBlockPair <- function(stimulus,block){
-  which(
+  index <- which(
     unlist(
       lapply(
         presentationList2, function(x) {
-          x$block==3 & x$stimulus==1
+          x$block==block & x$stimulus==stimulus
         }
       )
     )
   )
+  if (length(index) < 1) stop("You done fucked up")
+  return(index)
 }
 
 makeDFF<-function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
