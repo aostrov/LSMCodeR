@@ -95,6 +95,65 @@ processSingleStimulus <- function(myList,stimulus=1,block=1,
   
   
 }
+
+# takes a SNR file and turns it into subROIs that show the maximum change SNR over background
+getSNRforSubROIs <- function(imageData,numSubunits,x,y,w,h,writeNRRD=FALSE,dryRun=FALSE){
+  SNR_f0 <- c()
+  SNR_max <- c()
+  x.array <- c()
+  y.array <- c()
+  count=0
+  
+  for (yy in (seq(numSubunits)-1)){
+    for (xx in (seq(numSubunits)-1)){
+      cat(".")
+      if (dryRun){
+        print(paste("XX:",xx))
+        print(paste("YY:",yy))
+        print(paste("xxx[(x+(",xx,"*w)/",numSubunits,"):(x+(",xx+1,"*w)/"
+                    ,numSubunits,"),(y+(",yy,"*h)/",
+                    numSubunits,"):(y+(",yy+1,"*h)/",
+                    numSubunits,"),]",sep=""
+        )
+        )
+      } else {
+        if (writeNRRD){
+          write.nrrd(imageData[(x+(xx*w)/numSubunits):(x+((xx+1)*w)/numSubunits),
+                               (y+(yy*h)/numSubunits):(y+((yy+1)*h)/numSubunits),],
+                     file=paste("C:/Users/Aaron/Desktop/temp/numSubunits_",
+                                numSubunits,"_",xx+yy+count,".nrrd",sep=""),
+                     dtype="short")
+        }
+        
+        SNR_f0 = c(SNR_f0,mean(imageData[(x+(xx*w)/numSubunits):(x+((xx+1)*w)/numSubunits),
+                                         (y+(yy*h)/numSubunits):(y+((yy+1)*h)/numSubunits),
+                                         75:85]))
+        
+        SNR_max = c(SNR_max,max(apply(
+          imageData[(x+(xx*w)/numSubunits):(x+((xx+1)*w)/numSubunits),
+                    (y+(yy*h)/numSubunits):(y+((yy+1)*h)/numSubunits),],
+          c(1,2),mean)))
+        x.array <- c(x.array,xx)
+        y.array <- c(y.array,yy)
+        
+        
+        
+      }
+    }
+    count=count+numSubunits
+  }
+  # Return block
+  if (!dryRun){
+    df <- data.frame(SNR_f0,SNR_max)
+    df$dSNR <- df$SNR_max - df$SNR_f0
+    df$X <- x.array
+    df$Y <- y.array
+    return(df)
+  }
+  
+}
+
+
 makeDFF<-function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
   zdim<-dim(imageStack)[xyzDimOrder[3]]
   xdim<-dim(imageStack)[xyzDimOrder[1]]
