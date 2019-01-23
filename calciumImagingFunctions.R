@@ -44,6 +44,57 @@ getIndexOfStimulusBlockPair <- function(stimulus,block){
   return(index)
 }
 
+# a little something to make my life easier when I want to either
+# loop through all of the sitmuli and make either dFF or SNR
+# or just reprocess a single one.
+processSingleStimulus <- function(myList,stimulus=1,block=1,
+                                  outputType=c("snr","raw","dff"),writeNRRD=FALSE) {
+  # I'll probably want some kind of checking here for existing
+  # files, etc
+  
+  outputType = match.arg(outputType)
+  i <- getIndexOfStimulusBlockPair(stimulus,block)
+  # print(i)
+  
+  rangeOfImages <- seq(from=myList[[i]]$start,
+                       to=myList[[i]]$end,
+                       by=myList[[i]]$timeResampled)
+  
+  downSampledImage <- apply(
+    imageDataSlice[rangeOfImages,,,,],
+    1,
+    function(x) resizeImage(x,myList[[i]]$resize[1],
+                            myList[[i]]$resize[2]))
+  
+  dim(downSampledImage)<-c(myList[[i]]$resize[1],
+                           myList[[i]]$resize[2],
+                           length(rangeOfImages))
+  
+  offsetCorrected <- returnOffsetedImage(downSampledImage,offsetValue=pixelOffset)
+  
+  if (outputType == 'dff'){
+    offsetCorrected <- makeDFFwithBaselineSubtraction(
+      offsetCorrected,
+      xyzDimOrder = c(1,2,3),
+      backgroundSlices=myList[[i]]$backgroundSlices
+    )
+    
+  } else if (outputType=="snr") {
+    offsetCorrected <- makeSNRByPixel(offsetCorrected,
+                                      backgroundSlices=myList[[i]]$backgroundSlices
+    )
+  }
+  
+  if (writeNRRD){
+    outfile <- file.path(myList[[i]]$outDir,paste(myList[[i]]$fileBaseName,"_",outputType,".nrrd",sep=""))
+    # print(paste("Writing to disk: ",outfile,sep=""))
+    write.nrrd(offsetCorrected,file=outfile,dtype="short")
+  }
+  
+  invisible(offsetCorrected)
+  
+  
+}
 makeDFF<-function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
   zdim<-dim(imageStack)[xyzDimOrder[3]]
   xdim<-dim(imageStack)[xyzDimOrder[1]]
