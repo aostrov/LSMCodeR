@@ -115,11 +115,11 @@ write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_dff_fullTime_sti
 
 outDir<-"F:/Imaging/GCaMP7_tests/outputNRRDs/"
 physioDirs <- dir("F:/Imaging/GCaMP7_tests/20181204-g7",patt='SP',full=T)
-for (physioDir in physioDirs[5]){
+for (physioDir in physioDirs){
   lsmLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="lsmlog_")
   stimLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="stimlog_")
   myFile <- dir(file.path(physioDir),full=T,rec=F,patt=".mat")
-  outDirSubDir <- paste(basename(physioDir),"_functionTest/",sep="")
+  outDirSubDir <- paste(basename(physioDir),"_SNR-with-floor/",sep="")
   source(file.path(LSMCodeRConfig$srcdir,"physiologyScript.R"))
 }
 
@@ -166,100 +166,6 @@ myImage.cropped.baselineCorrected <- (imageStack - outsideFishROIBackground)
 # dim(myImage.cropped.baselineCorrected)<-c(xdim,ydim,zdim)
 roi.average <- apply(myImage.cropped.baselineCorrected,3,mean)
 
- myImage<-imageDataSlice[rangeOfImages,,,,]
- myImage <- aperm(myImage,c(2,3,1))
- myImage <- aperm(myImage,c(2,1,3))
- write.nrrd(myImage,"C:/Users/Aaron/Desktop/raw.nrrd")
- write.nrrd((myImage-407),"C:/Users/Aaron/Desktop/baselineSubtracted.nrrd")
- baselineSubtracted <- myImage-407
- background <- apply(baselineSubtracted[,,c(75:85)],c(1,2),mean)
- write.nrrd(background,"C:/Users/Aaron/Desktop/background.nrrd")
- background.raw <- apply(myImage[,,c(75:85)],c(1,2),mean)
- write.nrrd(background.raw,"C:/Users/Aaron/Desktop/background_raw.nrrd")
- df.raw <- apply(myImage[,,],3,function(x) x-round(background.raw))
- write.nrrd(df.raw,"C:/Users/Aaron/Desktop/df_raw.nrrd")
- df.offset <- apply(myImage[,,],3,function(x) x-round(background))
- write.nrrd(df.offset,"C:/Users/Aaron/Desktop/df_offset.nrrd")
- dim(df.raw) <- c(700,1024,181)
- dim(df.offset) <- c(700,1024,181)
- write.nrrd(df.raw,"C:/Users/Aaron/Desktop/df_raw.nrrd")
- write.nrrd(df.offset,"C:/Users/Aaron/Desktop/df_offset.nrrd")
- dff.raw <- apply(df.raw, 3, function(x) x/background.raw)
- dim(dff.raw) <- c(700,1024,181)
- dff.offset <- apply(df.offset, 3, function(x) x/background)
- write.nrrd(dff.offset,"C:/Users/Aaron/Desktop/dff_offset.nrrd")
- dim(dff.offset) <- c(700,1024,181)
- write.nrrd(dff.offset,"C:/Users/Aaron/Desktop/dff_offset.nrrd")
- write.nrrd(dff.raw,"C:/Users/Aaron/Desktop/dff_raw.nrrd")
- makeDFFwithBaselineSubtraction(myImage,xyzDimOrder = c(1,2,3),backgroundSlices = c(75:85))
- myImage.dff <- makeDFFwithBaselineSubtraction(myImage,xyzDimOrder = c(1,2,3),backgroundSlices = c(75:85))
- write.nrrd(myImage.dff,"C:/Users/Aaron/Desktop/myImage.dff.nrrd")
- myImage.dff <- makeDFFwithBaselineSubtraction(myImage,xyzDimOrder = c(1,2,3),backgroundSlices = c(75:85))
- write.nrrd(myImage.dff,"C:/Users/Aaron/Desktop/myImage.dff.nrrd")
- 
- 
-makeDFF<-function(imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,3)){
- zdim<-dim(imageStack)[xyzDimOrder[3]]
- xdim<-dim(imageStack)[xyzDimOrder[1]]
- ydim<-dim(imageStack)[xyzDimOrder[2]]
- testSliceBackground<-apply(imageStack[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),mean)
- testSliceBackgroundSubtract<-apply(imageStack[,,],3,function(x) x-testSliceBackground)
- dim(testSliceBackgroundSubtract)<-c(xdim,ydim,zdim)
- testSliceDFF<-apply(testSliceBackgroundSubtract, 3, function(x) x/testSliceBackground)
- dim(testSliceDFF)<-c(xdim,ydim,zdim)
- return(testSliceDFF)
-}
-
-
-processSingleStimulus <- function(myList,stimulus=1,block=1,
-                                  outputType=c("snr","raw","dff"),writeNRRD=FALSE) {
-  # I'll probably want some kind of checking here for existing
-  # files, etc
-  
-  outputType = match.arg(outputType)
-  i <- getIndexOfStimulusBlockPair(stimulus,block)
-  # print(i)
-  
-  rangeOfImages <- seq(from=myList[[i]]$start,
-                     to=myList[[i]]$end,
-                     by=myList[[i]]$timeResampled)
-  
-  downSampledImage <- apply(
-    imageDataSlice[rangeOfImages,,,,],
-    1,
-    function(x) resizeImage(x,myList[[i]]$resize[1],
-                            myList[[i]]$resize[2]))
-  
-  dim(downSampledImage)<-c(myList[[i]]$resize[1],
-                           myList[[i]]$resize[2],
-                           length(rangeOfImages))
-  
-  offsetCorrected <- returnOffsetedImage(downSampledImage,offsetValue=pixelOffset)
-  
-  if (outputType == 'dff'){
-    offsetCorrected <- makeDFFwithBaselineSubtraction(
-      offsetCorrected,
-      xyzDimOrder = c(1,2,3),
-      backgroundSlices=myList[[i]]$backgroundSlices
-    )
-    
-  } else if (outputType=="snr") {
-    offsetCorrected <- makeSNRByPixel(offsetCorrected,
-                                      backgroundSlices=myList[[i]]$backgroundSlices
-    )
-  }
-  
-  if (writeNRRD){
-    outfile <- file.path(myList[[i]]$outDir,paste(myList[[i]]$fileBaseName,"nrrd",sep="."))
-    # print(paste("Writing to disk: ",outfile,sep=""))
-    write.nrrd(offsetCorrected,file=outfile,dtype="short")
-  }
-  
-  cat("+",fill=10)
-  invisible(offsetCorrected)
-  
-  
-}
 
 write.nrrd(xxx[(x+(0*w)/2):(x+(1*w)/2),(y+(0*h)/2):(y+(1*h)/2),],
            file="C:/Users/Aaron/Desktop/firstQuarter.nrrd")
@@ -273,23 +179,21 @@ write.nrrd(xxx[(x+(1*w)/2):(x+(2*w)/2),(y+(1*h)/2):(y+(2*h)/2),],
            file="C:/Users/Aaron/Desktop/fourthQuarter.nrrd")
 
 zz=10
-count=0
-for (yy in (seq(zz)-1)){
-  for (xx in (seq(zz)-1)){
-    print(paste("xxx[(x+(",xx,"*w)/",zz,"):(x+(",xx+1,"*w)/",zz,"),(y+(",yy,"*h)/",zz,"):(y+(",yy+1,"*h)/",zz,"),]",sep=""
-               ))
-    
-    # write.nrrd(xxx[(x+(xx*w)/zz):(x+(xx+1*w)/zz),(y+(yy*h)/zz):(y+(yy+1*h)/zz),],
-    #            file=paste("C:/Users/Aaron/Desktop/temp/",xx+yy+count,".nrrd",sep=""),
-    #            dtype="short")
-    SNR_f0 <- mean(xxx[(x+(xx*w)/zz):(x+(xx+1*w)/zz),(y+(yy*h)/zz):(y+(yy+1*h)/zz),75:85])
-    print(SNR_f0)
-  }
-  count=count+10
+
+
+stimDir <- dir(file.path(outDir,"20190117-fish_03-0-SabineBars_gen_A-SP_functionTest"),full=T)
+fullDF <- data.frame()
+for (stimFile in stimDir) {
+  nrrd <- read.nrrd(stimFile)
+  tempDF <- getSNRforSubROIs(nrrd,numSubunits = 40,x=53,y=44, w=280,h=280,dryRun = F)
+  tempDF$file <- basename(stimFile)
+  fullDF <- rbind(fullDF, tempDF)
 }
 
-# so instead of writing each thing out, I can try to get a SNR_max-SNR_F0/SNR_f0
-SNR_f0 <- mean(xxx[(x+(xx*w)/zz):(x+(xx+1*w)/zz),(y+(yy*h)/zz):(y+(yy+1*h)/zz),75:85])
-# and I would want to look frame by frame, averaging the frames and then finding the frame
-# with the max signal
-SNR_max.1 <- apply(xxx[(x+(xx*w)/zz):(x+(xx+1*w)/zz),(y+(yy*h)/zz):(y+(yy+1*h)/zz),],c(1,2),mean)
+ggplot(fullDF,aes(X,Y,fill=dSNR)) + 
+  geom_raster(interpolate = T) + 
+  facet_wrap(~file) + 
+  scale_fill_gradientn(colors = jet(20))
+
+
+by(fullDF[,"dSNR"],fullDF[,"file"],which.max)
