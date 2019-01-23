@@ -7,6 +7,7 @@ require('hdf5r')
 require('nat')
 require("magick")
 require('ggplot2')
+require('squash')
 
 LSMCodeRConfig<-list()
 LSMCodeRConfig$srcdir<-normalizePath(dirname(attr(body(function() {}),'srcfile')$filename))
