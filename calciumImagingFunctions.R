@@ -48,7 +48,8 @@ getIndexOfStimulusBlockPair <- function(stimulus,block){
 # loop through all of the sitmuli and make either dFF or SNR
 # or just reprocess a single one.
 processSingleStimulus <- function(myList,stimulus=1,block=1,
-                                  outputType=c("snr","raw","dff"),writeNRRD=FALSE) {
+                                  outputType=c("snr","raw","dff"),writeNRRD=FALSE,
+                                  downSampleImage=FALSE,correctOffest=FALSE) {
   # I'll probably want some kind of checking here for existing
   # files, etc
   
@@ -60,27 +61,32 @@ processSingleStimulus <- function(myList,stimulus=1,block=1,
                        to=myList[[i]]$end,
                        by=myList[[i]]$timeResampled)
   
-  downSampledImage <- apply(
+  myImage <- imageDataSlice[rangeOfImages,,,,]
+  
+  if (downSampleImage){
+    myImage <- apply(
     imageDataSlice[rangeOfImages,,,,],
     1,
     function(x) resizeImage(x,myList[[i]]$resize[1],
                             myList[[i]]$resize[2]))
   
-  dim(downSampledImage)<-c(myList[[i]]$resize[1],
+  dim(myImage)<-c(myList[[i]]$resize[1],
                            myList[[i]]$resize[2],
                            length(rangeOfImages))
-  
-  offsetCorrected <- returnOffsetedImage(downSampledImage,offsetValue=pixelOffset)
+  }
+  if (correctOffest){
+    myImage <- returnOffsetedImage(myImage,offsetValue=pixelOffset)
+  }
   
   if (outputType == 'dff'){
-    offsetCorrected <- makeDFFwithBaselineSubtraction(
-      offsetCorrected,
+    myImage <- makeDFFwithBaselineSubtraction(
+      myImage,
       xyzDimOrder = c(1,2,3),
       backgroundSlices=myList[[i]]$backgroundSlices
     )
     
   } else if (outputType=="snr") {
-    offsetCorrected <- makeSNRByPixel(offsetCorrected,
+    myImage <- makeSNRByPixel(myImage,
                                       backgroundSlices=myList[[i]]$backgroundSlices
     )
   }
@@ -88,10 +94,10 @@ processSingleStimulus <- function(myList,stimulus=1,block=1,
   if (writeNRRD){
     outfile <- file.path(myList[[i]]$outDir,paste(myList[[i]]$fileBaseName,"_",outputType,".nrrd",sep=""))
     # print(paste("Writing to disk: ",outfile,sep=""))
-    write.nrrd(offsetCorrected,file=outfile,dtype="short")
+    write.nrrd(myImage,file=outfile,dtype="short")
   }
   
-  invisible(offsetCorrected)
+  invisible(myImage)
   
   
 }
