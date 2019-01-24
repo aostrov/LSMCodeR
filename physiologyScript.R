@@ -118,9 +118,12 @@ for (block in 0:4){
   for (stimulus in 0:3){
 
     processSingleStimulus(myList=presentationList2,
-                            stimulus = stimulus+1,
-                            block = block+1,
-                          writeNRRD = TRUE)
+                          stimulus = stimulus+1,
+                          block = block+1,
+                          outputType=outputType,
+                          writeNRRD = TRUE, setFloor = FALSE,
+                          downSampleImage = TRUE)
+    
     if (count%%10==0){
       cat("+"," \n")
     } else {
