@@ -102,7 +102,9 @@ processSingleStimulus <- function(myList,stimulus=1,block=1,
 }
 
 # takes a SNR file and turns it into subROIs that show the maximum change SNR over background
-getSNRforSubROIs <- function(imageData,numSubunits,x,y,w,h,writeNRRD=FALSE,dryRun=FALSE){
+getSNRforSubROIs <- function(imageData,numSubunits,x,y,w,h,
+                             f0Window=c(75:85),responseWindow=c(90:120),
+                             writeNRRD=FALSE,dryRun=FALSE){
   SNR_f0 <- c()
   SNR_max <- c()
   x.array <- c()
@@ -132,11 +134,11 @@ getSNRforSubROIs <- function(imageData,numSubunits,x,y,w,h,writeNRRD=FALSE,dryRu
         
         SNR_f0 = c(SNR_f0,mean(imageData[(x+(xx*w)/numSubunits):(x+((xx+1)*w)/numSubunits),
                                          (y+(yy*h)/numSubunits):(y+((yy+1)*h)/numSubunits),
-                                         75:85]))
+                                         f0Window]))
         
         SNR_max = c(SNR_max,max(apply(
           imageData[(x+(xx*w)/numSubunits):(x+((xx+1)*w)/numSubunits),
-                    (y+(yy*h)/numSubunits):(y+((yy+1)*h)/numSubunits),],
+                    (y+(yy*h)/numSubunits):(y+((yy+1)*h)/numSubunits),responseWindow],
           c(1,2),mean)))
         x.array <- c(x.array,xx)
         y.array <- c(y.array,yy)
