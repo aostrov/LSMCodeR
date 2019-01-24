@@ -78,7 +78,7 @@ source(file.path(LSMCodeRConfig$srcdir,"LSMLogParser.R"))
 
 count=1
 
-if (!exists("presentationList2")){
+# if (!exists("presentationList2")){
   presentationList2<-list()
   for (block in 0:4){
     for (stimulus in 0:3){
@@ -108,11 +108,12 @@ if (!exists("presentationList2")){
       count=count+1
     }
   }
-} else {
-  print("list already exists")
-}
-saveRDS(presentationList2,file=file.path(LSMCodeRConfig$maindir,"presentationList.rds"))
+# } else {
+#   print("list already exists")
+# }
+# saveRDS(presentationList2,file=file.path(LSMCodeRConfig$maindir,"presentationList.rds"))
 
+count = 1
 for (block in 0:4){
   for (stimulus in 0:3){
 
@@ -120,6 +121,12 @@ for (block in 0:4){
                             stimulus = stimulus+1,
                             block = block+1,
                           writeNRRD = TRUE)
+    if (count%%10==0){
+      cat("+"," \n")
+    } else {
+      cat("+"," ")
+    }
+    count=count+1
   }
 }
 
