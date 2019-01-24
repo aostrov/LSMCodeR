@@ -8,6 +8,9 @@ require('nat')
 require("magick")
 require('ggplot2')
 require('squash')
+require('digest')
+
+pixelOffset=399
 
 LSMCodeRConfig<-list()
 LSMCodeRConfig$srcdir<-normalizePath(dirname(attr(body(function() {}),'srcfile')$filename))
