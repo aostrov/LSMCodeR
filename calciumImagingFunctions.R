@@ -49,7 +49,7 @@ getIndexOfStimulusBlockPair <- function(stimulus,block){
 # or just reprocess a single one.
 processSingleStimulus <- function(myList,stimulus=1,block=1,
                                   outputType=c("snr","raw","dff"),writeNRRD=FALSE,
-                                  downSampleImage=FALSE,correctOffest=FALSE) {
+                                  downSampleImage=FALSE, setFloor = FALSE, ...) {
   # I'll probably want some kind of checking here for existing
   # files, etc
   
@@ -74,10 +74,9 @@ processSingleStimulus <- function(myList,stimulus=1,block=1,
                            myList[[i]]$resize[2],
                            length(rangeOfImages))
   }
-  if (correctOffest){
-    myImage <- returnOffsetedImage(myImage,offsetValue=pixelOffset)
-  }
-  
+
+  myImage <- returnOffsetedImage(myImage,offsetValue=pixelOffset, setFloor = setFloor, ...)
+
   if (outputType == 'dff'){
     myImage <- makeDFFwithBaselineSubtraction(
       myImage,
@@ -87,14 +86,14 @@ processSingleStimulus <- function(myList,stimulus=1,block=1,
     
   } else if (outputType=="snr") {
     myImage <- makeSNRByPixel(myImage,
-                                      backgroundSlices=myList[[i]]$backgroundSlices
+                              backgroundSlices=myList[[i]]$backgroundSlices
     )
   }
   
   if (writeNRRD){
     outfile <- file.path(myList[[i]]$outDir,paste(myList[[i]]$fileBaseName,"_",outputType,".nrrd",sep=""))
     # print(paste("Writing to disk: ",outfile,sep=""))
-    write.nrrd(myImage,file=outfile,dtype="short")
+    write.nrrd(myImage,file=outfile) #,dtype="short"
   }
   
   invisible(myImage)
@@ -243,9 +242,10 @@ returnOffsetedImage <- function(imageData,xyzDimOrder=c(1,2,3),offsetValue,setFl
   ydim<-dim(imageData)[xyzDimOrder[2]]
   
   imageData <- imageData - offsetValue
-  
-  if (setFloor) imageData[imageData < 0] = floor
-  
+
+  if (setFloor) {
+    imageData[imageData < 0] = floor
+  }
   return(imageData)
 }
 
