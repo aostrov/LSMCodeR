@@ -78,7 +78,7 @@ processSingleStimulus <- function(myList,stimulus=1,block=1,
   myImage <- returnOffsetedImage(myImage,offsetValue=pixelOffset, setFloor = setFloor, ...)
 
   if (outputType == 'dff'){
-    myImage <- makeDFFwithBaselineSubtraction(
+    myImage <- makeDFF(
       myImage,
       xyzDimOrder = c(1,2,3),
       backgroundSlices=myList[[i]]$backgroundSlices
