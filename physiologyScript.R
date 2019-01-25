@@ -33,6 +33,7 @@ file.h5 <- H5File$new(myFile, mode = "r+")
 # save a new variable that contains the image data
 # this step can be avoided, and might improve performance on very large datasets
 imageDataSlice<-file.h5[["imagedata"]]
+file.h5$close()
 # file.h5$close()
 # data is in the form:
 # [stacks,(channels),slices,rows, columns]
@@ -82,7 +83,7 @@ count=1
   presentationList2<-list()
   for (block in 0:4){
     for (stimulus in 0:3){
-      print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
+      # print(paste("stimulus bar:",stimulus,"for stimulus block: ",block))
       x <- lsm.transition.frames[count]
       y <- x + (stimulusPeriod + 200)
       presentationList2[[count]]<-list("block"=block+1,
@@ -103,8 +104,8 @@ count=1
                                                   imageDataSlice.dims[4]/resizeFactor),
                                        "timeResampled"=downSampleInTime,
                                        "creationDate"=date())
-      print(x)
-      print(y)
+      # print(x)
+      # print(y)
       count=count+1
     }
   }
@@ -113,25 +114,12 @@ count=1
 # }
 # saveRDS(presentationList2,file=file.path(LSMCodeRConfig$maindir,"presentationList.rds"))
 
-count = 1
-for (block in 0:4){
-  for (stimulus in 0:3){
-
-    processSingleStimulus(myList=presentationList2,
-                          stimulus = stimulus+1,
-                          block = block+1,
-                          outputType=outputType,
-                          writeNRRD = TRUE, setFloor = FALSE,
-                          downSampleImage = TRUE)
-    
-    if (count%%10==0){
-      cat("+"," \n")
-    } else {
-      cat("+"," ")
-    }
-    count=count+1
-  }
-}
+lapply(presentationList2,
+       processSingleStimulus.lapply,
+       outputType=outputType,
+       writeNRRD = TRUE, setFloor = FALSE,
+       downSampleImage = TRUE,
+       image=imageDataSlice)
 
 ######
 # If I want to do an average again

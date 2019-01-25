@@ -61,11 +61,11 @@ processSingleStimulus <- function(myList,stimulus=1,block=1,
                        to=myList[[i]]$end,
                        by=myList[[i]]$timeResampled)
   
-  myImage <- imageDataSlice[rangeOfImages,,,,]
+  myImage <- image[rangeOfImages,,,,]
   
   if (downSampleImage){
     myImage <- apply(
-    imageDataSlice[rangeOfImages,,,,],
+    image[rangeOfImages,,,,],
     1,
     function(x) resizeImage(x,myList[[i]]$resize[1],
                             myList[[i]]$resize[2]))
@@ -92,6 +92,59 @@ processSingleStimulus <- function(myList,stimulus=1,block=1,
   
   if (writeNRRD){
     outfile <- file.path(myList[[i]]$outDir,paste(myList[[i]]$fileBaseName,"_",outputType,".nrrd",sep=""))
+    # print(paste("Writing to disk: ",outfile,sep=""))
+    write.nrrd(myImage,file=outfile) #,dtype="short"
+  }
+  
+  invisible(myImage)
+  
+  
+}
+
+processSingleStimulus.lapply <- function(myList,
+                                  outputType=c("snr","raw","dff"),writeNRRD=FALSE,
+                                  downSampleImage=FALSE, setFloor = FALSE, image,...) {
+  # I'll probably want some kind of checking here for existing
+  # files, etc
+  
+  cat(".")
+  outputType = match.arg(outputType)
+
+  rangeOfImages <- seq(from=myList$start,
+                       to=myList$end,
+                       by=myList$timeResampled)
+  
+  myImage <- image[rangeOfImages,,,,]
+  
+  if (downSampleImage){
+    myImage <- apply(
+      image[rangeOfImages,,,,],
+      1,
+      function(x) resizeImage(x,myList$resize[1],
+                              myList$resize[2]))
+    
+    dim(myImage)<-c(myList$resize[1],
+                    myList$resize[2],
+                    length(rangeOfImages))
+  }
+  
+  myImage <- returnOffsetedImage(myImage,offsetValue=pixelOffset, setFloor = setFloor, ...)
+  
+  if (outputType == 'dff'){
+    myImage <- makeDFF(
+      myImage,
+      xyzDimOrder = c(1,2,3),
+      backgroundSlices=myList$backgroundSlices
+    )
+    
+  } else if (outputType=="snr") {
+    myImage <- makeSNRByPixel(myImage,
+                              backgroundSlices=myList$backgroundSlices
+    )
+  }
+  
+  if (writeNRRD){
+    outfile <- file.path(myList$outDir,paste(myList$fileBaseName,"_",outputType,".nrrd",sep=""))
     # print(paste("Writing to disk: ",outfile,sep=""))
     write.nrrd(myImage,file=outfile) #,dtype="short"
   }
