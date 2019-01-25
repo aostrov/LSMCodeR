@@ -115,13 +115,14 @@ write.nrrd(average,file.path(outDir,outDirSubDir,paste("Average_dff_fullTime_sti
 
 outDir<-"F:/Imaging/GCaMP7_tests/outputNRRDs/"
 physioDirs <- dir("F:/Imaging/GCaMP7_tests/20181204-g7",patt='SP',full=T)
+special <- "_lapply"
 outputTypes=c("snr","raw","dff")
-for (outputType in outputTypes) {
-  for (physioDir in physioDirs[6]){
+for (outputType in outputTypes[c(1,3)]) {
+  for (physioDir in physioDirs[7:10]){
     lsmLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="lsmlog_")
     stimLogFile <- dir(file.path(physioDir,"logs"),full=T,rec=F,patt="stimlog_")
     myFile <- dir(file.path(physioDir),full=T,rec=F,patt=".mat")
-    outDirSubDir <- paste(basename(physioDir),"_",outputType,"/",sep="")
+    outDirSubDir <- paste(basename(physioDir),"_",outputType,special,"/",sep="")
     source(file.path(LSMCodeRConfig$srcdir,"physiologyScript.R"))
   }
 }
