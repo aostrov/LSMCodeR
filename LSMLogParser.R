@@ -13,8 +13,20 @@ lsmLogFileShort <- logFileParsed[(nrow(logFileParsed) - framesSkipped):nrow(logF
 # logFileParsed<-readLogFileData(logFile)
 
 endOfStimulations.frame <- (startOfStimulations + 1) # 12 # dummy variable that I'll need to grab from a script later
+if (nrow(stimdf[stimdf$shader=='green',])==4) {
+  # proceed as normal
+  someDodgyFix <- stimdf[stimdf$shader=='green',][2,'seconds']
+} else {
+  if (diff(round(stimdf[stimdf$shader=='green',"seconds"]))[1] > diff(round(stimdf[stimdf$shader=='green',"seconds"]))[2]) {
+    someDodgyFix <- stimdf[stimdf$shader=='green',"seconds"][1]
+  } else {
+    someDodgyFix <- stimdf[stimdf$shader=='green',"seconds"][2]
+  }
+}
+
+
 lsm2stim.offset.ms <- lsmLogFileShort[endOfStimulations.frame,'time'] - 
-  (stimdf[stimdf$shader=='green',][2,'seconds']*1000) # get an offset based on the end of the green flashes
+  (someDodgyFix*1000) # get an offset based on the end of the green flashes
 
 transitions.stimdf.bar <- stimdf[newRows,]
 transitions.stimdf.bar$correctedMilliseconds <- transitions.stimdf.bar$seconds*1000 + lsm2stim.offset.ms

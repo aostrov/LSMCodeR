@@ -49,7 +49,7 @@ flashsd <- sd(imageDataSlice[1:100,,,10:20,10:20])
 
 slicesWithBigNumbers.begin <- c()
 for (i in 1:100){
-  if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
+  if (mean(imageDataSlice[i,,,,])>(flashmean+2*flashsd)){
     slicesWithBigNumbers.begin <- c(slicesWithBigNumbers.begin,i)
   }
 }
@@ -70,7 +70,7 @@ endOfFirstGreenFlash <- startOfStimulations + 1
 
 source(file.path(LSMCodeRConfig$srcdir,"stimLogParser.R"))
 source(file.path(LSMCodeRConfig$srcdir,"LSMLogParser.R"))
-
+# stop("AHHHHHHHH!")
 ##################
 ## Doing Things ##
 ##################
