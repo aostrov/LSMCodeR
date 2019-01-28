@@ -19,7 +19,9 @@ LSMCodeRConfig$protocolDir <- file.path(LSMCodeRConfig$srcdir,"protocolCSVs")
 source(file.path(LSMCodeRConfig$srcdir,"calciumImagingFunctions.R"))
 
 pixelOffset=399
-sabineProtocolSimple <- list(
-  presentationMatrix = matrix(rep(c(3,4,5,6),5),nrow = 5,byrow=TRUE),
-  stimulationSections = read.csv(file.path(LSMCodeRConfig$protocolDir,"sabineProtocolSimple"))
+protocolList <- list(
+  sabineProtocolSimple = list(
+    presentationMatrix = matrix(rep(c(3,4,5,6),5),nrow = 5,byrow=TRUE),
+    stimulationSections = read.csv(file.path(LSMCodeRConfig$protocolDir,"sabineProtocolSimple"))
+  )
 )
