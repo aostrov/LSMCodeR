@@ -43,3 +43,28 @@ init.singleTrial <- function(matFile, outDir,
                       "creationDate"=date())
   return(singleTrial)
 }
+
+
+init.Animal <- function(pathToSpreadsheet) {
+  Animal <- read.csv(pathToSpreadsheet)
+  # animal_ID, genotype_injection, date_injected, date_run
+  return(Animal)
+}
+
+init.MatFile <- function(animalID, pathToMatFile, protocolUsed) {
+  x=unique(protocolList[[protocolUsed]]$stimulationSections[
+    protocolList[[protocolUsed]]$stimulationSections$speed == 0 &
+      !is.na(protocolList[[protocolUsed]]$stimulationSections$speed),
+    ]$time)
+  if (length(x)>1) stop("Your protocol is too complex")
+  MatFile <- list(animalID = animalID,
+                  matID = basename(pathToMatFile),
+                  stimulusProtocol = names(protocolList[protocolUsed]),
+                  transitionFrames= lsm.transition.frames
+  )
+  MatFile
+}
+
+init.Trial <- function(matID,) {
+  
+}
