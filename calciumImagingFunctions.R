@@ -244,7 +244,7 @@ getROIs <- function(numSubunits=NULL,roiEdgeLength=NULL,
         (y+(yy* ifelse(is.null(numSubunits),roiEdgeLength,h/divisor) )):
           (y+((yy+1) * ifelse(is.null(numSubunits),roiEdgeLength,h/divisor) ))
       )
-      roiList[[count]] <- list(xRange=xRange,yRange=yRange)
+      roiList[[count]] <- list(xRange=xRange,yRange=yRange,xPosition=xx,yPosition=yy)
       count=count+1
     }
   }
@@ -309,6 +309,20 @@ makeSNRByPixel<-function(imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,
   noise <- apply(imageStack[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),calcSNR.noise)
   snr <- apply(imageStack,xyzDimOrder[3],function(x) {x/noise} )
   dim(snr) <- c(xdim,ydim,zdim)
+  return(snr)
+}
+
+makeSNRByPixel.lapply<-function(rois,imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,3)){
+  zdim<-dim(imageStack)[xyzDimOrder[3]]
+  xdim<-dim(imageStack)[xyzDimOrder[1]]
+  ydim<-dim(imageStack)[xyzDimOrder[2]]
+  
+  
+  noise <- apply(imageStack[rois$xRange,rois$yRange,
+                            backgroundSlices]
+                 ,c(xyzDimOrder[1],xyzDimOrder[2]),calcSNR.noise)
+  snr <- apply(imageStack[rois$xRange,rois$yRange,],xyzDimOrder[3],function(x) {x/noise} )
+  dim(snr) <- c(length(rois$xRange),length(rois$yRange),zdim)
   return(snr)
 }
 
