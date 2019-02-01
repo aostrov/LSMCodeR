@@ -213,6 +213,60 @@ getSNRforSubROIs <- function(imageData,numSubunits,x,y,w,h,
   
 }
 
+# Given a rectangular area, return a list of coordinates of
+# sub-rectangles that either divide up the full area based
+# on the number of units requested, or based on edge length
+# of the ROIs
+# If the number of subunits is selected, the subunits inherit
+# the aspect ratio of the outer box.
+# If the edge length is specified, the ROIs are square.
+# If the outer box is not perfectly divisble by the number or
+# size of subunits desired, the outer box is adjusted to the 
+# next smallest size to evenly accomodate everything.
+# TODO: Right now the subROIs overlap by 1 pixel
+getROIs <- function(numSubunits=NULL,roiEdgeLength=NULL,
+                    x=1,y=1,w=300,h=400){
+  if ( (!is.null(numSubunits) && !is.null(roiEdgeLength)) || (is.null(numSubunits) && is.null(roiEdgeLength)) ) {
+    stop("Choose either a number of ROIs or the edge length of square ROIs")
+  } 
+  divisor <- ifelse(is.null(numSubunits),roiEdgeLength,numSubunits)
+  w <- roundToNearestDivisibleInteger(w,divisor)
+  h <- roundToNearestDivisibleInteger(h,divisor)
+  if ( w%%divisor!=0 | h%%divisor!=0 ) stop("AAAHHHH!")
+  count=1
+  roiList <- list()
+  for ( yy in seq( ( ifelse(is.null(numSubunits),h/roiEdgeLength,numSubunits) ) )-1 ) {
+    for ( xx in seq( ( ifelse(is.null(numSubunits),w/roiEdgeLength,numSubunits) ) )-1 ){
+      xRange <- c(
+        (x+(xx* ifelse(is.null(numSubunits),roiEdgeLength,w/divisor) )):
+          (x+((xx+1)* ifelse(is.null(numSubunits),roiEdgeLength,w/divisor) )))
+      yRange <- c(
+        (y+(yy* ifelse(is.null(numSubunits),roiEdgeLength,h/divisor) )):
+          (y+((yy+1) * ifelse(is.null(numSubunits),roiEdgeLength,h/divisor) ))
+      )
+      roiList[[count]] <- list(xRange=xRange,yRange=yRange)
+      count=count+1
+    }
+  }
+  return(roiList)
+}
+
+roundToNearestDivisibleInteger <- function(numerator,divisor,roundUp=FALSE){
+  if (numerator%%divisor != 0){
+    remainder <- numerator%%divisor
+    if (roundUp) {
+      difference <- divisor - remainder
+      divisible <- numerator + difference
+    } else {
+      divisible <- numerator - remainder
+    }
+    return(divisible)
+  } else {
+    return(numerator)
+  }
+}
+
+
 
 makeDFF<-function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
   zdim<-dim(imageStack)[xyzDimOrder[3]]
