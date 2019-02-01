@@ -45,9 +45,10 @@ init.singleTrial <- function(matFile, outDir,
 }
 
 
-init.Animal <- function(pathToSpreadsheet) {
-  Animal <- read.csv(pathToSpreadsheet)
+init.Animal <- function(animalID=1,pathToAnimalModel=file.path(LSMCodeRConfig$modelDir,"animalsUsed.csv")) {
+  Animal <- read.csv(pathToAnimalModel)
   # animal_ID, genotype_injection, date_injected, date_run
+  Animal <- Animal[Animal$animal_ID==animalID,]
   return(Animal)
 }
 
