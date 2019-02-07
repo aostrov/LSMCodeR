@@ -202,3 +202,52 @@ ggplot(fullDF,aes(X,Y,fill=dSNR)) +
 
 
 by(fullDF[,"dSNR"],fullDF[,"file"],which.max)
+
+# Maybe for each ROI I would look at the data and for each time point get
+# mean, max, and median values
+
+nrrdPath <- "/Users/aostrov/projects/R/OrgerLab/LSMCodeR/stuff/stimulus_bar-3-for_stimulus_block-1_raw.nrrd"
+nrrd <- read.nrrd(nrrdPath)
+myFile <- "/Volumes/home/hdf5/20181204-gcamp7F-7d-SabineBars-1planeSP.mat"
+file.h5 <- H5File$new(file.path(myFile), mode = "r")
+imageDataSlice<-file.h5[["imagedata"]]
+
+roiList <- getROIs(roiEdgeLength = 26,x=64,y=192,w=600,h=172) # ~10um ROIs
+roiSNR <- lapply(roiList,makeSNRByPixel.lapply,imageStack=nrrd)
+fish_20181204_gcamp7F_7d_SabineBars_1planeSP_roiRawOffsetCorrected.hdf5_13_1813 <- lapply(
+                                      roiList,
+                                      getROIsRawDataFromHDF5.lapply,
+                                      hdf5Image.mat=imageDataSlice,
+                                      frame.start=13,frame.end=1813
+                                    )
+
+
+# here I need to combine a few things
+getROIsRawDataFromHDF5.lapply <- function(roiList,hdf5Image.mat,frame.start,frame.end,offset=399) {
+  tempY <- roiList$yRange
+  tempX <- roiList$xRange
+  # get hdf5 image and figure out which slices I need
+  # I would get this information from presentationList2
+  # or whatever ends up replacing it
+  tempImage <- hdf5Image.mat[c(frame.start:frame.end),,,tempY,tempX]
+  tempImage <- aperm(tempImage,c(3,2,1))-offset
+  print(dim(tempImage))
+  return(tempImage)
+}
+
+snrDF.raw <- data.frame(
+  rawDataMean=sapply(fish_20181204_gcamp7F_7d_SabineBars_1planeSP_roiRawOffsetCorrected.hdf5_13_1813,function(x) mean(x[,,900:1500])),
+  snr=sapply(fish_20181204_gcamp7F_7d_SabineBars_1planeSP_roiRawOffsetCorrected.hdf5_13_1813,function(x) {
+    mean(apply(makeSNRByPixel(x,backgroundSlices=c(750:850))[,,900:1500],3,mean))
+  }),
+  xpos=sapply(roiList,function(x) x$xPosition),
+  ypos=sapply(roiList,function(x) x$yPosition)
+)
+
+# for each ROI I would be able to tell when/in which frame the max occurs
+sapply(roiSNR,function(x) {which.max(apply(x[,,90:150], 3, mean))+90})
+
+ggplot(snrDF.raw,aes(xpos,ypos,fill=snr)) + 
+  geom_raster(interpolate = F) + 
+  scale_fill_gradientn(colors = jet(20)) +
+  coord_fixed() + scale_y_reverse()
