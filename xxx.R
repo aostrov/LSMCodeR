@@ -251,3 +251,45 @@ ggplot(snrDF.raw,aes(xpos,ypos,fill=snr)) +
   geom_raster(interpolate = F) + 
   scale_fill_gradientn(colors = jet(20)) +
   coord_fixed() + scale_y_reverse()
+count=1
+for (stimulus in 1:nrow(protocolList[['sabineProtocolSimple']]$presentationMatrix)) {
+  for (block in 1:ncol(protocolList[['sabineProtocolSimple']]$presentationMatrix)) {
+    # print(protocolList[['sabineProtocolSimple']]$presentationMatrix[stimulus,block])
+      tmpdf <- subset(
+        protocolList[['sabineProtocolSimple']]$stimulationSections,
+        section==protocolList[['sabineProtocolSimple']]$presentationMatrix[stimulus,block]
+        )
+      description <- subset(
+          protocolList[['sabineProtocolSimple']]$stimulationSections,
+          section==protocolList[['sabineProtocolSimple']]$presentationMatrix[stimulus,block] & ( description!="background" & description!="settle" )
+        )$description
+      
+      backgroundLengthInMilliseconds <- tmpdf[tmpdf$description=="background","time"]
+      start <- lsm.transition.frames[count]
+      fromStimPresentationToEndOfStimulus <- tmpdf[tmpdf$description==description,"time"] + tmpdf[tmpdf$description=="settle","time"]
+      count=count+1
+      print(fromStimPresentationToEndOfStimulus)
+  }
+  
+}
+
+
+singleTrial <- list("matFile"=basename(matFile),
+                    "block"=block+1,
+                    "stimulus"=stimulus+1,
+                    "start"=start,
+                    "end"=end,
+                    "stimulusPeriod"=stimulusPeriod,
+                    "analysisWindow"=analysisWindow,
+                    "numberOfSlices"=(((end-start)/downSampleInTime)+1),
+                    "outDir"=file.path(outDir,outDirSubDir),
+                    "fileBaseName"=paste("stimulus_bar-",
+                                         stimulus+1,
+                                         "-for_stimulus_block-",
+                                         block+1,
+                                         sep=""),
+                    "backgroundSlices"=backgroundSlices,
+                    "resize"=c(imageDims[5]/resizeFactor,
+                               imageDims[4]/resizeFactor),
+                    "timeResampled"=timeResampled,
+                    "creationDate"=date())
