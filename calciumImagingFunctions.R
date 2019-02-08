@@ -248,6 +248,9 @@ getROIs <- function(numSubunits=NULL,roiEdgeLength=NULL,
       count=count+1
     }
   }
+  attrVector <- c(x,y,w,h,divisor)
+  names(attrVector) <- c("X_origin","Y_origin","width","height",ifelse(is.null(numSubunits),"roiEdgeLength","numSubunits"))
+  attr(roiList, "ROI_info" ) = attrVector
   return(roiList)
 }
 

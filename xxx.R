@@ -223,34 +223,71 @@ fish_20181204_gcamp7F_7d_SabineBars_1planeSP_roiRawOffsetCorrected.hdf5_13_1813 
 
 
 # here I need to combine a few things
-getROIsRawDataFromHDF5.lapply <- function(roiList,hdf5Image.mat,frame.start,frame.end,offset=399) {
-  tempY <- roiList$yRange
-  tempX <- roiList$xRange
+getROIsRawDataFromHDF5.lapply <- function(roiListElement,hdf5Image.mat,frame.start,frame.end,offset=399) {
+  tempY <- roiListElement$yRange
+  tempX <- roiListElement$xRange
   # get hdf5 image and figure out which slices I need
   # I would get this information from presentationList2
   # or whatever ends up replacing it
   tempImage <- hdf5Image.mat[c(frame.start:frame.end),,,tempY,tempX]
-  tempImage <- aperm(tempImage,c(3,2,1))-offset
-  print(dim(tempImage))
+  tempImage <- aperm(tempImage,c(3,2,1)) - offset
+  # print(dim(tempImage))
+  imageAttributes <- c(frame.start,frame.end,offset)
+  names(imageAttributes) <- c("frame.start","frame.end","offset")
+  attr(tempImage, "imageAttributes") <- imageAttributes
   return(tempImage)
 }
 
-snrDF.raw <- data.frame(
-  rawDataMean=sapply(fish_20181204_gcamp7F_7d_SabineBars_1planeSP_roiRawOffsetCorrected.hdf5_13_1813,function(x) mean(x[,,900:1500])),
-  snr=sapply(fish_20181204_gcamp7F_7d_SabineBars_1planeSP_roiRawOffsetCorrected.hdf5_13_1813,function(x) {
-    mean(apply(makeSNRByPixel(x,backgroundSlices=c(750:850))[,,900:1500],3,mean))
-  }),
-  xpos=sapply(roiList,function(x) x$xPosition),
-  ypos=sapply(roiList,function(x) x$yPosition)
-)
+getUsefulStatisticsByROI <- function(rawDataByROI,roiList,analysisWindow=c(900:1500),backgroundWindow=c(750:850)) {
+  snrDF <- data.frame(
+    # raw but offset correct data
+    raw.mean=sapply(rawDataByROI,function(x) mean(x[,,analysisWindow])),
+    raw.max=sapply(rawDataByROI,function(x) max(x[,,analysisWindow])),
+    raw.sd=sapply(rawDataByROI,function(x) sd(x[,,analysisWindow])),
+    # offset correct SnR data
+    snr.mean=sapply(rawDataByROI,function(x) {
+      mean(apply(makeSNRByPixel(x,backgroundSlices=backgroundWindow)[,,analysisWindow],3,mean))
+    }),
+    snr.max=sapply(rawDataByROI,function(x) {
+      max(apply(makeSNRByPixel(x,backgroundSlices=backgroundWindow)[,,analysisWindow],3,mean))
+    }),
+    snr.sd=sapply(rawDataByROI,function(x) {
+      sd(apply(makeSNRByPixel(x,backgroundSlices=backgroundWindow)[,,analysisWindow],3,mean))
+    }),
+    # dff on offset data, with a small fudge for when NaNs appear after 0/0
+    dff.mean=sapply(rawDataByROI, function(x){
+      dff <- mean(apply(makeDFF(x,backgroundSlices=backgroundWindow,xyzDimOrder=c(1,2,3))[,,analysisWindow],3,mean))
+      dff[is.nan(dff)]=0
+      return(dff)
+    }),
+    dff.max=sapply(rawDataByROI, function(x){
+      dff <- max(apply(makeDFF(x,backgroundSlices=backgroundWindow,xyzDimOrder=c(1,2,3))[,,analysisWindow],3,mean))
+      dff[is.nan(dff)]=0
+      return(dff)
+    }),
+    dff.sd=sapply(rawDataByROI, function(x){
+      dff <- sd(apply(makeDFF(x,backgroundSlices=backgroundWindow,xyzDimOrder=c(1,2,3))[,,analysisWindow],3,mean))
+      dff[is.nan(dff)]=0
+      return(dff)
+    }),
+    # X and Y positions
+    xpos=sapply(roiList,function(x) x$xPosition),
+    ypos=sapply(roiList,function(x) x$yPosition),
+    frame.start=sapply(rawDataByROI,function(x) attr(x,"imageAttributes")["frame.start"])
+  )
+  return(snrDF)
+}
 
 # for each ROI I would be able to tell when/in which frame the max occurs
 sapply(roiSNR,function(x) {which.max(apply(x[,,90:150], 3, mean))+90})
 
-ggplot(snrDF.raw,aes(xpos,ypos,fill=snr)) + 
+ggplot(stats.xxx,aes(xpos,ypos,fill=snr)) + 
   geom_raster(interpolate = F) + 
   scale_fill_gradientn(colors = jet(20)) +
   coord_fixed() + scale_y_reverse()
+
+
+
 count=1
 for (stimulus in 1:nrow(protocolList[['sabineProtocolSimple']]$presentationMatrix)) {
   for (block in 1:ncol(protocolList[['sabineProtocolSimple']]$presentationMatrix)) {
