@@ -20,7 +20,7 @@ dryRun=F
 downSampleInTime<-10
 backgroundSlices=c(75:85)
 resizeFactor <- 2
-pixelOffset <- 398
+# pixelOffset <- 398
 
 
 

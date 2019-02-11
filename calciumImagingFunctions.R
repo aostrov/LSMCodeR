@@ -254,6 +254,64 @@ getROIs <- function(numSubunits=NULL,roiEdgeLength=NULL,
   return(roiList)
 }
 
+
+getROIsRawDataFromHDF5.lapply <- function(roiListElement,hdf5Image.mat,frame.start,frame.end,offset=399) {
+  tempY <- roiListElement$yRange
+  tempX <- roiListElement$xRange
+  # get hdf5 image and figure out which slices I need
+  # I would get this information from presentationList2
+  # or whatever ends up replacing it
+  tempImage <- hdf5Image.mat[c(frame.start:frame.end),,,tempY,tempX]
+  tempImage <- aperm(tempImage,c(3,2,1)) - offset
+  # print(dim(tempImage))
+  imageAttributes <- c(frame.start,frame.end,offset)
+  names(imageAttributes) <- c("frame.start","frame.end","offset")
+  attr(tempImage, "imageAttributes") <- imageAttributes
+  return(tempImage)
+}
+
+getUsefulStatisticsByROI <- function(rawDataByROI,roiList,analysisWindow=c(900:1500),backgroundWindow=c(750:850)) {
+  snrDF <- data.frame(
+    # raw but offset correct data
+    raw.mean=sapply(rawDataByROI,function(x) mean(x[,,analysisWindow])),
+    raw.max=sapply(rawDataByROI,function(x) max(x[,,analysisWindow])),
+    raw.sd=sapply(rawDataByROI,function(x) sd(x[,,analysisWindow])),
+    # offset correct SnR data
+    snr.mean=sapply(rawDataByROI,function(x) {
+      mean(apply(makeSNRByPixel(x,backgroundSlices=backgroundWindow)[,,analysisWindow],3,mean))
+    }),
+    snr.max=sapply(rawDataByROI,function(x) {
+      max(apply(makeSNRByPixel(x,backgroundSlices=backgroundWindow)[,,analysisWindow],3,mean))
+    }),
+    snr.sd=sapply(rawDataByROI,function(x) {
+      sd(apply(makeSNRByPixel(x,backgroundSlices=backgroundWindow)[,,analysisWindow],3,mean))
+    }),
+    # dff on offset data, with a small fudge for when NaNs appear after 0/0
+    dff.mean=sapply(rawDataByROI, function(x){
+      dff <- mean(apply(makeDFF(x,backgroundSlices=backgroundWindow,xyzDimOrder=c(1,2,3))[,,analysisWindow],3,mean))
+      dff[is.nan(dff)]=0
+      return(dff)
+    }),
+    dff.max=sapply(rawDataByROI, function(x){
+      dff <- max(apply(makeDFF(x,backgroundSlices=backgroundWindow,xyzDimOrder=c(1,2,3))[,,analysisWindow],3,mean))
+      dff[is.nan(dff)]=0
+      return(dff)
+    }),
+    dff.sd=sapply(rawDataByROI, function(x){
+      dff <- sd(apply(makeDFF(x,backgroundSlices=backgroundWindow,xyzDimOrder=c(1,2,3))[,,analysisWindow],3,mean))
+      dff[is.nan(dff)]=0
+      return(dff)
+    }),
+    # X and Y positions
+    xpos=sapply(roiList,function(x) x$xPosition),
+    ypos=sapply(roiList,function(x) x$yPosition),
+    frame.start=sapply(rawDataByROI,function(x) attr(x,"imageAttributes")["frame.start"])
+  )
+  return(snrDF)
+}
+
+
+
 roundToNearestDivisibleInteger <- function(numerator,divisor,roundUp=FALSE){
   if (numerator%%divisor != 0){
     remainder <- numerator%%divisor
@@ -315,7 +373,7 @@ makeSNRByPixel<-function(imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,
   return(snr)
 }
 
-makeSNRByPixel.lapply<-function(rois,imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,3)){
+makeSNRByPixel.lapply<-function(rois,imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,3),asIfDFF=FALSE){
   zdim<-dim(imageStack)[xyzDimOrder[3]]
   xdim<-dim(imageStack)[xyzDimOrder[1]]
   ydim<-dim(imageStack)[xyzDimOrder[2]]
@@ -326,6 +384,9 @@ makeSNRByPixel.lapply<-function(rois,imageStack,backgroundSlices=c(75:85),xyzDim
                  ,c(xyzDimOrder[1],xyzDimOrder[2]),calcSNR.noise)
   snr <- apply(imageStack[rois$xRange,rois$yRange,],xyzDimOrder[3],function(x) {x/noise} )
   dim(snr) <- c(length(rois$xRange),length(rois$yRange),zdim)
+  # if (asIfDFF) {
+  #   snr <- apply(snr,)
+  # }
   return(snr)
 }
 
@@ -333,7 +394,6 @@ calcSNR.noise <- function(vector) {
   noise <- ((sd(diff(vector)))/sqrt(2))
   return(noise)
 }
-
 
 resizeImage = function(img, new_width, new_height, func=c("spline","linear")) {
   func=match.arg(func)
