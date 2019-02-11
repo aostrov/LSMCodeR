@@ -22,6 +22,7 @@ pixelOffset=399
 protocolList <- list(
   sabineProtocolSimple = list(
     presentationMatrix = matrix(rep(c(3,4,5,6),5),nrow = 5,byrow=TRUE),
-    stimulationSections = read.csv(file.path(LSMCodeRConfig$protocolDir,"sabineProtocolSimple"))
+    stimulationSections = read.csv(file.path(LSMCodeRConfig$protocolDir,"sabineProtocolSimple")),
+    framesSkipped = 30000
   )
 )
