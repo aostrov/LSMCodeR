@@ -26,7 +26,7 @@ testH5.file$close_all()
 
 foreach(i=1:10) %do% mean(myMatrix[,,i])
 
-registerDoParallel(cores = 3)
+registerDoParallel(cores = 2)
 foreach((i=1:10)) %dopar% mean(myMatrix[,,i])
 foreach(i=1:10) %dopar% mean(testH5.file[["fakeData"]][,,i]) # Works!!!!
 
