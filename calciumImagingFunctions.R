@@ -272,6 +272,10 @@ getROIsRawDataFromHDF5.lapply <- function(roiListElement,hdf5Image.mat,frame.sta
 
 getUsefulStatisticsByROI <- function(rawDataByROI,roiList,analysisWindow=c(900:1500),backgroundWindow=c(750:850)) {
   snrDF <- data.frame(
+    # raw but offset correct background
+    background.mean=sapply(rawDataByROI,function(x) mean(x[,,backgroundWindow])),
+    background.max=sapply(rawDataByROI,function(x) max(x[,,backgroundWindow])),
+    background.sd=sapply(rawDataByROI,function(x) sd(x[,,backgroundWindow])),
     # raw but offset correct data
     raw.mean=sapply(rawDataByROI,function(x) mean(x[,,analysisWindow])),
     raw.max=sapply(rawDataByROI,function(x) max(x[,,analysisWindow])),
@@ -394,6 +398,50 @@ calcSNR.noise <- function(vector) {
   noise <- ((sd(diff(vector)))/sqrt(2))
   return(noise)
 }
+
+makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow=300) {
+  trials <- list()
+  count=1
+  for (stimulus in 1:nrow(protocolList[[stimProtocol]]$presentationMatrix)) {
+    for (block in 1:ncol(protocolList[[stimProtocol]]$presentationMatrix)) {
+      # print(protocolList[[stimProtocol]]$presentationMatrix[stimulus,block])
+      tmpdf <- subset(
+        protocolList[[stimProtocol]]$stimulationSections,
+        section==protocolList[[stimProtocol]]$presentationMatrix[stimulus,block]
+      )
+      description <- subset(
+        protocolList[[stimProtocol]]$stimulationSections,
+        section==protocolList[[stimProtocol]]$presentationMatrix[stimulus,block] & 
+          ( description!="background" & description!="settle" )
+      )$description
+      
+      backgroundLengthInMilliseconds <- tmpdf[tmpdf$description=="background","time"] # in ms
+      start <- lsm.transition.frames[count] # in frames
+      backgroundSlices <- c(start:(start + backgroundLengthInMilliseconds * 0.1))
+      fromStimPresentationToEndOfStimulus <- tmpdf[tmpdf$description==description,"time"] + 
+        tmpdf[tmpdf$description=="settle","time"] # in ms
+      stimulusPeriod <- sum(tmpdf$time)
+      end <- start + (stimulusPeriod * 0.1) + analysisWindow
+      
+      trials[[paste(basename(matFile),stimulus,block,sep=".")]] <- list(
+        "matFile"=basename(matFile),
+        "block"=block,
+        "stimulus"=stimulus,
+        "start"=start,
+        "end"=end,
+        "stimulusPeriod"=stimulusPeriod,
+        "backgroundSlices"=backgroundSlices,
+        "stimulusDescription"=description,
+        "creationDate"=date()
+      )
+      
+      count=count+1
+    }
+    
+  }
+  return(trials)
+}
+
 
 resizeImage = function(img, new_width, new_height, func=c("spline","linear")) {
   func=match.arg(func)
