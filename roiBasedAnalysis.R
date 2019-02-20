@@ -40,13 +40,22 @@ for (myFile in physiologyFilesSP[2:6]) {
                                                              analysisWindow=c(150:750),backgroundWindow=c(0:100))
     attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=currentStimulusParameters[[stimulation]]$start+750,
                                                             frame.end = currentStimulusParameters[[stimulation]]$end)
-
+    attr(statisticsList[[stimulation]],"StimulusBlock") <- c(stimulus=currentStimulusParameters[[stimulation]]$stimulus,
+                                                             block=currentStimulusParameters[[stimulation]]$block)
+    
   }
   matList[[substr(stimulation,1,4)]] = statisticsList
   # clean up
   file.h5$close()
   imageDataSlice$close()
 }
+
+ggplot(statisticsList[[stimulation]],aes(xpos,ypos,fill=snr.mean)) + 
+  geom_raster(interpolate = F) + 
+  scale_fill_gradientn(colors = jet(20)) +
+  coord_fixed() + scale_y_reverse()
+
+
 
 # here I need to combine a few things
 
