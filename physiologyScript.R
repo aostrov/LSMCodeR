@@ -114,7 +114,7 @@ count=1
 # }
 # saveRDS(presentationList2,file=file.path(LSMCodeRConfig$maindir,"presentationList.rds"))
 
-lapply(presentationList2,
+lapply(presentationList2[1:4],
        processSingleStimulus.lapply,
        outputType=outputType,
        writeNRRD = TRUE, setFloor = FALSE,
