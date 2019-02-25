@@ -425,6 +425,7 @@ makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow
       
       trials[[paste(basename(matFile),stimulus,block,sep=".")]] <- list(
         "matFile"=basename(matFile),
+        "stimulusProtocol"=stimProtocol,
         "block"=block,
         "stimulus"=stimulus,
         "start"=start,
