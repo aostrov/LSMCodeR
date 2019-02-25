@@ -2,10 +2,10 @@
 ##Anatomy##
 ############
 
-myFile<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-anatomyPost/20181204-gcamp7F-7d-anatomyPost.mat"
-outDir<-"C:/Users/Aaron/Desktop/nrrdFiles/"
-outDirSubDir<-"20181204-gcamp7F-7d-anatomyPost"
-reorderImageSlices=NULL # or c(84:100,1:83)
+# myFile<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-anatomyPost/20181204-gcamp7F-7d-anatomyPost.mat"
+outDir<-dirname(myAnatomyFile)
+outDirSubDir<-"anatomyPost"
+reorderImageSlices=c(32:1,50:35) # NULL # or c(84:100,1:83)
 roundOutput = TRUE
 dtype = 'short'
 
@@ -18,7 +18,7 @@ if (!dir.exists(file.path(outDir,outDirSubDir))){
 
 
 # open the connection to the .mat file
-file.h5 <- H5File$new(myFile, mode = "r")
+file.h5 <- H5File$new(myAnatomyFile, mode = "r")
 # save a new variable that contains the image data
 # this step can be avoided, and might improve performance on very large datasets
 imageData<-file.h5[["imagedata"]]
@@ -40,3 +40,4 @@ if (file.exists(file.path(outDir,outDirSubDir,"anatomyAverageReordered.nrrd"))) 
 
 
 file.h5$close()
+imageDataSlice$close()
