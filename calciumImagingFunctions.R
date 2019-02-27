@@ -440,6 +440,7 @@ makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow
     }
     
   }
+  attr(trials,"imageDimensions") <- imageDataSlice.dims
   return(trials)
 }
 
