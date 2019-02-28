@@ -310,6 +310,7 @@ makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow
     }
     
   }
+  attr(trials,"imageDimensions") <- imageDataSlice.dims
   return(trials)
 }
 
@@ -326,7 +327,7 @@ for (offset in 1:length(flashSlices)) {
 
 count=1
 for (i in 1:20){
-  write.nrrd(aperm(imageDataSlice[1:10,,i,,],c(3,2,1)),file=paste("C:/Users/Aaron/Desktop/nrrdOrder/flash-",i,".nrrd",sep=""),dtype = "short")
+  write.nrrd(aperm(imageDataSlice[100,,i,,],c(2,1)),file=paste("~/Desktop/nrrdOrder/roiSelection-",i,".nrrd",sep=""),dtype = "short")
   count=count+1
 }
 
