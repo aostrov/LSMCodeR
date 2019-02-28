@@ -216,7 +216,7 @@ by(fullDF[,"dSNR"],fullDF[,"file"],which.max)
 ## multiplane images ##
 #######################
 
-file.h5 <- H5File$new("F:/Imaging/GCaMP7_tests/20181204-g7/AAGA-gen-B-laser3-SabineSimple/AAGA-gen-B-laser3-SabineSimple.mat", 
+file.h5 <- H5File$new("/Volumes/TranscendJD/Work/AAFA-gen-A-laser3-SabineSimple/AAFA-gen-A-laser3-SabineSimple.mat", 
                       mode = "r+")
 imageDataSlice<-file.h5[["imagedata"]]
 test.matrix <- imageDataSlice[2,,12,,]
@@ -227,14 +227,107 @@ ggplot(test.matrix.melt,aes(Var2,Var1,fill=value)) +
   coord_fixed() + scale_y_reverse()
 
 write.nrrd(aperm(imageDataSlice[1200:1600,,13,,],c(3,2,1)),file = "C:/Users/Aaron/Desktop/multiplaneNrrd.nrrd",dtype = "short")
-flashMean <- c()
+
+flashMean <- mean(imageDataSlice[1:100,,,1:200,1:200])
+flashSD <- sd(imageDataSlice[1:100,,,1:200,1:200])
+flashSlices <- c()
 for (i in 1:20){
-  flashMean <- c(flashMean,mean(imageDataSlice[1:100,,i,1:200,1:200]))
+  flashSlices <- c(flashSlices,mean(imageDataSlice[1:10,,i,1:200,1:200]))
 }
+max.flash <- which.max(flashSlices)
+
+slicesWithBigNumbers.begin <- c()
+for (i in 1:20){
+  if (mean(imageDataSlice[1:10,,i,1:200,1:200])>(flashMean+2*flashSD)){
+    slicesWithBigNumbers.begin <- c(slicesWithBigNumbers.begin,i)
+  }
+}
+startOfStimulations <- max(slicesWithBigNumbers.begin)
+endOfFirstGreenFlash <- startOfStimulations + 1
+
+
+count=0
+slice.identity <- data.frame(slice=integer(0),z_plane=integer(0),time=integer(0))
+for (time in 1:1650){
+  for (z_plane in 1:20){
+    count=count+1
+    slice.identity <- rbind(slice.identity,c(count,z_plane,time))
+  }
+}
+colnames(slice.identity) <- c("slice","z_plane","time")
+slice.transitions <- slice.identity[lsm.transition.frames,]
+
+makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow=300) {
+  trials <- list()
+  count=1
+  for (stimulus in 1:nrow(protocolList[[stimProtocol]]$presentationMatrix)) {
+    for (block in 1:ncol(protocolList[[stimProtocol]]$presentationMatrix)) {
+      for (plane in seq(imageDataSlice.dims[['z']])) {
+        tmpdf <- subset(
+          protocolList[[stimProtocol]]$stimulationSections,
+          section==protocolList[[stimProtocol]]$presentationMatrix[stimulus,block]
+        )
+        description <- subset(
+          protocolList[[stimProtocol]]$stimulationSections,
+          section==protocolList[[stimProtocol]]$presentationMatrix[stimulus,block] & 
+            ( description!="background" & description!="settle" )
+        )$description
+        
+        backgroundLengthInMilliseconds <- tmpdf[tmpdf$description=="background","time"] # in ms
+        
+        if ( imageDataSlice.dims[['z']] > 1 ) {
+          start <- slice.transitions[count,"time"] # in frames
+        } else {
+          start <- lsm.transition.frames[count]
+        }
+        
+        backgroundSlices <- c( 
+          start : 
+            (start + (backgroundLengthInMilliseconds * 0.1) / imageDataSlice.dims[['z']] ) 
+          )
+        stimulusPeriod <- sum(tmpdf$time) / imageDataSlice.dims[['z']] # in ms
+        end <- start + 
+          (stimulusPeriod * 0.1) + 
+          ( analysisWindow / imageDataSlice.dims[['z']] )
+        
+     }
+
+      trials[[paste(basename(matFile),stimulus,block,sep=".")]] <- list(
+        "matFile"=basename(matFile),
+        "stimulusProtocol"=stimProtocol,
+        "block"=block,
+        "stimulus"=stimulus,
+        "plane"=plane,
+        "start"=start,
+        "end"=end,
+        "stimulusPeriodPerSlice"=stimulusPeriod,
+        "backgroundSlices"=backgroundSlices,
+        "stimulusDescription"=description,
+        "creationDate"=date()
+      )
+
+      count=count+1
+    }
+    
+  }
+  attr(trials,"imageDimensions") <- imageDataSlice.dims
+  return(trials)
+}
+
+
+offsets <- c()
+for (offset in 1:length(flashSlices)) {
+  if (offset < max.flash) {
+    offsets <- c(offsets,0)
+  } else {
+    offsets <- c(offsets,1)
+  }
+}
+
 
 count=1
 for (i in 1:20){
-  write.nrrd(aperm(imageDataSlice[1:10,,i,,],c(3,2,1)),file=paste("C:/Users/Aaron/Desktop/nrrdOrder/flash-",i,".nrrd",sep=""),dtype = "short")
+  write.nrrd(aperm(imageDataSlice[100,,i,,],c(2,1)),file=paste("~/Desktop/nrrdOrder/roiSelection-",i,".nrrd",sep=""),dtype = "short")
   count=count+1
 }
 

@@ -244,7 +244,7 @@ getROIs <- function(numSubunits=NULL,roiEdgeLength=NULL,
         (y+(yy* ifelse(is.null(numSubunits),roiEdgeLength,h/divisor) )):
           (y+((yy+1) * ifelse(is.null(numSubunits),roiEdgeLength,h/divisor) ))
       )
-      roiList[[count]] <- list(xRange=xRange,yRange=yRange,xPosition=xx,yPosition=yy)
+      roiList[[paste("ROI",count,sep="_")]] <- list(xRange=xRange,yRange=yRange,xPosition=xx,yPosition=yy)
       count=count+1
     }
   }
@@ -255,13 +255,13 @@ getROIs <- function(numSubunits=NULL,roiEdgeLength=NULL,
 }
 
 
-getROIsRawDataFromHDF5.lapply <- function(roiListElement,hdf5Image.mat,frame.start,frame.end,offset=399) {
+getROIsRawDataFromHDF5.lapply <- function(roiListElement,hdf5Image.mat,frame.start,frame.end,z=1,offset=399) {
   tempY <- roiListElement$yRange
   tempX <- roiListElement$xRange
   # get hdf5 image and figure out which slices I need
   # I would get this information from presentationList2
   # or whatever ends up replacing it
-  tempImage <- hdf5Image.mat[c(frame.start:frame.end),,,tempY,tempX]
+  tempImage <- hdf5Image.mat[c(frame.start:frame.end),,z,tempY,tempX]
   tempImage <- aperm(tempImage,c(3,2,1)) - offset
   # print(dim(tempImage))
   imageAttributes <- c(frame.start,frame.end,offset)
@@ -271,7 +271,7 @@ getROIsRawDataFromHDF5.lapply <- function(roiListElement,hdf5Image.mat,frame.sta
 }
 
 getUsefulStatisticsByROI <- function(rawDataByROI,roiList,analysisWindow=c(900:1500),backgroundWindow=c(750:850)) {
-  snrDF <- data.frame(
+  usefulStatisticsByROI.DF <- data.frame(
     # raw but offset correct background
     background.mean=sapply(rawDataByROI,function(x) mean(x[,,backgroundWindow])),
     background.max=sapply(rawDataByROI,function(x) max(x[,,backgroundWindow])),
@@ -311,7 +311,7 @@ getUsefulStatisticsByROI <- function(rawDataByROI,roiList,analysisWindow=c(900:1
     ypos=sapply(roiList,function(x) x$yPosition),
     frame.start=sapply(rawDataByROI,function(x) attr(x,"imageAttributes")["frame.start"])
   )
-  return(snrDF)
+  return(usefulStatisticsByROI.DF)
 }
 
 
@@ -404,33 +404,45 @@ makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow
   count=1
   for (stimulus in 1:nrow(protocolList[[stimProtocol]]$presentationMatrix)) {
     for (block in 1:ncol(protocolList[[stimProtocol]]$presentationMatrix)) {
-      # print(protocolList[[stimProtocol]]$presentationMatrix[stimulus,block])
-      tmpdf <- subset(
-        protocolList[[stimProtocol]]$stimulationSections,
-        section==protocolList[[stimProtocol]]$presentationMatrix[stimulus,block]
-      )
-      description <- subset(
-        protocolList[[stimProtocol]]$stimulationSections,
-        section==protocolList[[stimProtocol]]$presentationMatrix[stimulus,block] & 
-          ( description!="background" & description!="settle" )
-      )$description
-      
-      backgroundLengthInMilliseconds <- tmpdf[tmpdf$description=="background","time"] # in ms
-      start <- lsm.transition.frames[count] # in frames
-      backgroundSlices <- c(start:(start + backgroundLengthInMilliseconds * 0.1))
-      fromStimPresentationToEndOfStimulus <- tmpdf[tmpdf$description==description,"time"] + 
-        tmpdf[tmpdf$description=="settle","time"] # in ms
-      stimulusPeriod <- sum(tmpdf$time)
-      end <- start + (stimulusPeriod * 0.1) + analysisWindow
+      for (plane in seq(imageDataSlice.dims[['z']])) {
+        tmpdf <- subset(
+          protocolList[[stimProtocol]]$stimulationSections,
+          section==protocolList[[stimProtocol]]$presentationMatrix[stimulus,block]
+        )
+        description <- subset(
+          protocolList[[stimProtocol]]$stimulationSections,
+          section==protocolList[[stimProtocol]]$presentationMatrix[stimulus,block] & 
+            ( description!="background" & description!="settle" )
+        )$description
+        
+        backgroundLengthInMilliseconds <- tmpdf[tmpdf$description=="background","time"] # in ms
+        
+        if ( imageDataSlice.dims[['z']] > 1 ) {
+          start <- slice.transitions[count,"time"] # in frames
+        } else {
+          start <- lsm.transition.frames[count]
+        }
+        
+        backgroundSlices <- c( 
+          start : 
+            (start + (backgroundLengthInMilliseconds * 0.1) / imageDataSlice.dims[['z']] ) 
+        )
+        stimulusPeriod <- sum(tmpdf$time) / imageDataSlice.dims[['z']] # in ms
+        end <- start + 
+          (stimulusPeriod * 0.1) + 
+          ( analysisWindow / imageDataSlice.dims[['z']] )
+        
+      }
       
       trials[[paste(basename(matFile),stimulus,block,sep=".")]] <- list(
         "matFile"=basename(matFile),
         "stimulusProtocol"=stimProtocol,
         "block"=block,
         "stimulus"=stimulus,
+        "plane"=plane,
         "start"=start,
         "end"=end,
-        "stimulusPeriod"=stimulusPeriod,
+        "stimulusPeriodPerSlice"=stimulusPeriod,
         "backgroundSlices"=backgroundSlices,
         "stimulusDescription"=description,
         "creationDate"=date()
@@ -440,6 +452,7 @@ makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow
     }
     
   }
+  attr(trials,"imageDimensions") <- imageDataSlice.dims
   return(trials)
 }
 

@@ -12,6 +12,7 @@ file.h5$close()
 # data is in the form:
 # [stacks,(channels),slices,rows, columns]
 imageDataSlice.dims <- imageDataSlice$dims
+names(imageDataSlice.dims) <- c('t','c','z','y','x')
 # frames channels slices rows  columns
 # 33001     1        1    512   700
 
