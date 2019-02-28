@@ -265,8 +265,10 @@ getROIsRawDataFromHDF5.lapply <- function(roiListElement,hdf5Image.mat,frame.sta
   tempImage <- aperm(tempImage,c(3,2,1)) - offset
   # print(dim(tempImage))
   imageAttributes <- c(frame.start,frame.end,offset)
-  names(imageAttributes) <- c("frame.start","frame.end","offset")
+  names(imageAttributes) <- c("frame.start","frame.end","pixel_offset")
   attr(tempImage, "imageAttributes") <- imageAttributes
+  roiAttributes <- c(xPosition=roiListElement$xPosition,yPosition=roiListElement$yPosition)
+  attr(tempImage,"roiAttributes") <- roiAttributes
   return(tempImage)
 }
 
@@ -307,8 +309,8 @@ getUsefulStatisticsByROI <- function(rawDataByROI,roiList,analysisWindow=c(900:1
       return(dff)
     }),
     # X and Y positions
-    xpos=sapply(roiList,function(x) x$xPosition),
-    ypos=sapply(roiList,function(x) x$yPosition),
+    xpos=sapply(rawDataByROI,function(x) attr(x,"roiAttributes")['xPosition']),
+    ypos=sapply(rawDataByROI,function(x) attr(x,"roiAttributes")['yPosition']),
     frame.start=sapply(rawDataByROI,function(x) attr(x,"imageAttributes")["frame.start"])
   )
   return(usefulStatisticsByROI.DF)

@@ -72,9 +72,13 @@ for (myFile in physiologyFilesSP) {
           )
         }
       )
-      statisticsList[[stimulation]]<- getUsefulStatisticsByROI(rawDataForMatFileByROIs,roiList,
-                                                               analysisWindow=c(150:750),backgroundWindow=c(0:100))
-      attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=currentStimulusParameters[[stimulation]]$start+750,
+      # statisticsList[[stimulation]]<- getUsefulStatisticsByROI(rawDataForMatFileByROIs,matFileROIListByZ,
+      #                                                          analysisWindow=c(150:750),backgroundWindow=c(0:100))
+      statisticsList[[stimulation]]<- lapply(rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
+                                                                      analysisWindow=c((140/20):(720/20)),
+                                                                      backgroundWindow=c(0:(900/20)))
+      
+      attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=currentStimulusParameters[[stimulation]]$start,
                                                               frame.end = currentStimulusParameters[[stimulation]]$end)
       attr(statisticsList[[stimulation]],"StimulusBlock") <- c(stimulus=currentStimulusParameters[[stimulation]]$stimulus,
                                                                block=currentStimulusParameters[[stimulation]]$block)
