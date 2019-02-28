@@ -36,6 +36,18 @@ for (myFile in physiologyFilesSP) {
     source(file.path(LSMCodeRConfig$srcdir,"parseImageForGreenFlashAndLSMandStimLogs.R"))
     currentStimulusParameters <- makeTrial(myFile)
     # set up ROIs
+    
+    
+    matFileROIListByZ <- list()
+    for (tectumROIforZ in 1:nrow(tempDF <- tectumROIs[tectumROIs$matfile==matFileCode,])) {
+      print(tectumROIforZ)
+      matFileROIListByZ[[paste("z",tectumROIforZ,sep="_")]] = getROIs(roiEdgeLength = roiEdgeLength,
+              x=tempDF[tectumROIforZ,"x"],
+              y=tempDF[tectumROIforZ,"y"],
+              w=tempDF[tectumROIforZ,"w"],
+              h=tempDF[tectumROIforZ,"h"])
+    }
+    
     roiList <- getROIs(roiEdgeLength = roiEdgeLength,
                        x=tectumROIs[tectumROIs$matfile==matFileCode,"x"],
                        y=tectumROIs[tectumROIs$matfile==matFileCode,"y"],
@@ -44,16 +56,21 @@ for (myFile in physiologyFilesSP) {
     
     animal[[basename(myFile)]] <- currentStimulusParameters
     statisticsList <- list()
-    for (stimulation in names(currentStimulusParameters)){
+    for (stimulation in names(currentStimulusParameters)[1]){ # for a matfile get the raw data as Z plane and ROI
       # foreach(stimulation=names(currentStimulusParameters)) %dopar% {
       print(currentStimulusParameters[[stimulation]]$start)
-      rawDataForMatFileByROIs <- lapply(
-        roiList,
-        getROIsRawDataFromHDF5.lapply,
-        hdf5Image.mat = imageDataSlice,
-        frame.start = currentStimulusParameters[[stimulation]]$start+750,
-        frame.end = currentStimulusParameters[[stimulation]]$end,
-        offset = 399
+      rawDataForMatFileByROIs <- lapply( # outer lapply breaks down roiList by z-plane
+        matFileROIListByZ,function(roiList) 
+        {
+        lapply( # inner lapply gets the raw statistics for each ROI
+          roiList,
+          getROIsRawDataFromHDF5.lapply,
+          hdf5Image.mat = imageDataSlice,
+          frame.start = currentStimulusParameters[[stimulation]]$start, # 750,
+          frame.end = currentStimulusParameters[[stimulation]]$end,
+          offset = 399
+          )
+        }
       )
       statisticsList[[stimulation]]<- getUsefulStatisticsByROI(rawDataForMatFileByROIs,roiList,
                                                                analysisWindow=c(150:750),backgroundWindow=c(0:100))
