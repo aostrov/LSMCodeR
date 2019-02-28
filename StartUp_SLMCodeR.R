@@ -26,3 +26,13 @@ protocolList <- list(
     framesSkipped = 30000
   )
 )
+
+if (dir.exists("F:\\Imaging\\GCaMP7_tests\\20181204-g7")) {
+  print("Setting imageDir to F:/Imaging/GCaMP7_tests/20181204-g7")
+  imageDir <- "F:/Imaging/GCaMP7_tests/20181204-g7"
+} else if (dir.exists("/Volumes/TranscendJD/Work/")) {
+  print("Setting imageDir to /Volumes/TranscendJD/Work/")
+  imageDir <- "/Volumes/TranscendJD/Work/"
+} else {
+  print("Please set the variable 'imageDir' to something sensible.")
+}
