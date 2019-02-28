@@ -3,6 +3,7 @@ tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
 anatomyFiles <- dir("F:/Imaging/GCaMP7_tests/20181204-g7/",patt="^[A-Z]{3}-")
 physiologyFilesSP <- dir("F:/Imaging/GCaMP7_tests/20181204-g7/",patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
 matFile <- "/Volumes/home/hdf5/20181204-gcamp7F-7d-SabineBars-1planeSP.mat"
+matFile <- file.path(imageDir,"AAFA-gen-A-laser3-SabineSimple","AAFA-gen-A-laser3-SabineSimple.mat")
 file.h5 <- H5File$new(file.path(matFile), mode = "r")
 imageDataSlice<-file.h5[["imagedata"]]
 roiEdgeLength <- 26
@@ -39,7 +40,7 @@ for (myFile in physiologyFilesSP) {
     
     
     matFileROIListByZ <- list()
-    for (tectumROIforZ in 1:nrow(tempDF <- tectumROIs[tectumROIs$matfile==matFileCode,])) {
+    for (tectumROIforZ in 1:nrow(tempDF <- tectumROIs[as.character(tectumROIs$matfile)==matFileCode,])) {
       print(tectumROIforZ)
       matFileROIListByZ[[paste("z",tectumROIforZ,sep="_")]] = getROIs(roiEdgeLength = roiEdgeLength,
               x=tempDF[tectumROIforZ,"x"],
@@ -48,19 +49,20 @@ for (myFile in physiologyFilesSP) {
               h=tempDF[tectumROIforZ,"h"])
     }
     
-    roiList <- getROIs(roiEdgeLength = roiEdgeLength,
-                       x=tectumROIs[tectumROIs$matfile==matFileCode,"x"],
-                       y=tectumROIs[tectumROIs$matfile==matFileCode,"y"],
-                       w=tectumROIs[tectumROIs$matfile==matFileCode,"w"],
-                       h=tectumROIs[tectumROIs$matfile==matFileCode,"h"]) # ~10um ROIs
+    # roiList <- getROIs(roiEdgeLength = roiEdgeLength,
+    #                    x=tectumROIs[tectumROIs$matfile==matFileCode,"x"],
+    #                    y=tectumROIs[tectumROIs$matfile==matFileCode,"y"],
+    #                    w=tectumROIs[tectumROIs$matfile==matFileCode,"w"],
+    #                    h=tectumROIs[tectumROIs$matfile==matFileCode,"h"]) # ~10um ROIs
     
     animal[[basename(myFile)]] <- currentStimulusParameters
     statisticsList <- list()
-    for (stimulation in names(currentStimulusParameters)[1]){ # for a matfile get the raw data as Z plane and ROI
+    for (stimulation in names(currentStimulusParameters)){ # for a matfile get the raw data as Z plane and ROI
       # foreach(stimulation=names(currentStimulusParameters)) %dopar% {
       print(currentStimulusParameters[[stimulation]]$start)
       rawDataForMatFileByROIs <- lapply( # outer lapply breaks down roiList by z-plane
-        matFileROIListByZ,function(roiList) 
+        matFileROIListByZ,
+        function(roiList) 
         {
         lapply( # inner lapply gets the raw statistics for each ROI
           roiList,
