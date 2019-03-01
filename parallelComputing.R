@@ -28,7 +28,7 @@ foreach(i=1:10) %do% mean(myMatrix[,,i])
 foreach((i=1:10)) %dopar% mean(myMatrix[,,i])
 foreach(i=1:10) %dopar% mean(testH5.file[["fakeData"]][,,i]) # Works!!!!
 
-numCores=3
+numCores=detectCores() - 1
 if (Sys.info()[["sysname"]] == "Darwin") {
   registerDoParallel(cores = numCores)
   cat("Registering parallel execution for MacOS")
