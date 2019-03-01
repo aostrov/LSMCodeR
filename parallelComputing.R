@@ -1,8 +1,9 @@
 library("hdf5r")
 library("parallel")
 install.packages("doParallel")
+install.packages("doSNOW")
 library(doParallel)
-
+require(doSNOW)
 myMatrix <- matrix(sample(c(1:50),1000,replace = TRUE))
 dim(myMatrix) <- c(10,10,10)
 testH5.file <- H5File$new("~/Desktop/testH5.h5", mode = "a")
@@ -44,10 +45,11 @@ if (Sys.info()[["sysname"]] == "Darwin") {
 # set it up a bit differently on a windows machine :(
 physiologyFilesSP <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
 foreach(myFile=physiologyFilesSP, .packages = c("hdf5r",'nat')) %dopar% {
-  cat(myFile,file="~/Desktop/parallelDebuggingHell.txt",append=T,sep="\n")
+  # cat(myFile,file="~/Desktop/parallelDebuggingHell.txt",append=T,sep="\n")
   testH5.file <- H5File$new(myFile, mode = "r")
   testH5.file.dims <- testH5.file[["imagedata"]]$dims
-  write.nrrd(aperm(testH5.file[["imagedata"]][1:10,,1,100:300,100:300],c(3,2,1)),file=file.path("~/Desktop/",paste(basename(myFile),"nrrd",sep=".")),dtype="short")
+  write.nrrd(aperm(testH5.file[["imagedata"]][1:10,,1,100:300,100:300],c(3,2,1)),
+             file=file.path("C:/Users/Aaron/Desktop/",paste(basename(myFile),"nrrd",sep=".")),dtype="short")
   testH5.file$close()
   testH5.file.dims
 }
