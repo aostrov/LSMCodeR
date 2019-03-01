@@ -26,13 +26,19 @@ testH5.file$close_all()
 
 foreach(i=1:10) %do% mean(myMatrix[,,i])
 
-registerDoParallel(cores = 8)
+registerDoParallel(cores = 3)
 foreach((i=1:10)) %dopar% mean(myMatrix[,,i])
 foreach(i=1:10) %dopar% mean(testH5.file[["fakeData"]][,,i]) # Works!!!!
 
-foreach(myFile=physiologyFilesSP, .packages = "hdf5r") %dopar% {
-  file.h5 <- H5File$new(file.path(myFile), mode = "r")
-  test.dim <- file.h5[['imagedata']]$dims
-  file.h5$close()
-  test.dim
+# oddly enough, this seems to work on my mac. I need to see if I have to
+# set it up a bit differently on a windows machine :(
+vectors=dir("/Users/aostrov/projects/OrgerLab/OrgerLab-MolecularBiology/vectors",full=T,rec=T)
+foreach(myFile=physiologyFilesSP, .packages = c("hdf5r",'nat')) %dopar% {
+  cat(myFile,file="~/Desktop/parallelDebuggingHell.txt",append=T,sep="\n")
+  testH5.file <- H5File$new(myFile, mode = "r")
+  testH5.file.dims <- testH5.file[["imagedata"]]$dims
+  write.nrrd(aperm(testH5.file[["imagedata"]][1:10,,1,100:300,100:300],c(3,2,1)),file=file.path("~/Desktop/",paste(basename(myFile),"nrrd",sep=".")),dtype="short")
+  testH5.file$close()
+  testH5.file.dims
 }
+# 
