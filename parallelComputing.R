@@ -25,14 +25,24 @@ testH5.file$close_all()
 # doParallel package
 
 foreach(i=1:10) %do% mean(myMatrix[,,i])
-
-registerDoParallel(cores = 3)
 foreach((i=1:10)) %dopar% mean(myMatrix[,,i])
 foreach(i=1:10) %dopar% mean(testH5.file[["fakeData"]][,,i]) # Works!!!!
 
+numCores=3
+if (Sys.info()[["sysname"]] == "Darwin") {
+  registerDoParallel(cores = numCores)
+  cat("Registering parallel execution for MacOS")
+} else if (Sys.info()[["sysname"]] == "Windows") {
+  registerDoSNOW(makeCluster(numCores,type="SOCK")) 
+  getDoParWorkers() 
+  cat("Registering parallel execution for Windows")
+} else {
+  cat("I can't determine the OS!!!")
+}
+
 # oddly enough, this seems to work on my mac. I need to see if I have to
 # set it up a bit differently on a windows machine :(
-vectors=dir("/Users/aostrov/projects/OrgerLab/OrgerLab-MolecularBiology/vectors",full=T,rec=T)
+physiologyFilesSP <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
 foreach(myFile=physiologyFilesSP, .packages = c("hdf5r",'nat')) %dopar% {
   cat(myFile,file="~/Desktop/parallelDebuggingHell.txt",append=T,sep="\n")
   testH5.file <- H5File$new(myFile, mode = "r")
