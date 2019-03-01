@@ -26,7 +26,13 @@ testH5.file$close_all()
 
 foreach(i=1:10) %do% mean(myMatrix[,,i])
 
-registerDoParallel(cores = 2)
+registerDoParallel(cores = 8)
 foreach((i=1:10)) %dopar% mean(myMatrix[,,i])
 foreach(i=1:10) %dopar% mean(testH5.file[["fakeData"]][,,i]) # Works!!!!
 
+foreach(myFile=physiologyFilesSP, .packages = "hdf5r") %dopar% {
+  file.h5 <- H5File$new(file.path(myFile), mode = "r")
+  test.dim <- file.h5[['imagedata']]$dims
+  file.h5$close()
+  test.dim
+}

@@ -1,48 +1,54 @@
 tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
 
-anatomyFiles <- dir("F:/Imaging/GCaMP7_tests/20181204-g7/",patt="^[A-Z]{3}-")
-physiologyFilesSP <- dir("F:/Imaging/GCaMP7_tests/20181204-g7/",patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
-matFile <- "/Volumes/home/hdf5/20181204-gcamp7F-7d-SabineBars-1planeSP.mat"
-matFile <- file.path(imageDir,"AAFA-gen-A-laser3-SabineSimple","AAFA-gen-A-laser3-SabineSimple.mat")
-file.h5 <- H5File$new(file.path(matFile), mode = "r")
-imageDataSlice<-file.h5[["imagedata"]]
+anatomyFiles <- dir(imageDir,patt="^[A-Z]{3}-")
+physiologyFilesSP <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
+# matFile <- "/Volumes/home/hdf5/20181204-gcamp7F-7d-SabineBars-1planeSP.mat"
+# matFile <- file.path(imageDir,"AAFA-gen-A-laser3-SabineSimple","AAFA-gen-A-laser3-SabineSimple.mat")
+# file.h5 <- H5File$new(file.path(matFile), mode = "r")
+# imageDataSlice<-file.h5[["imagedata"]]
 roiEdgeLength <- 26
+matListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","matListSP.RDS")
+registerDoParallel(cores = 2)
 # registerDoParallel(cores = 2)
 
 # lapply(physiologyFilesSP)
 
 
-if (file.exists(file.path(LSMCodeRConfig$srcdir,"objects","matList1.RDS")) & exists("matList")) {
+if (file.exists(matListRDS) & exists("matList")) {
   print("matList exists and is already loaded. ")
   print("Using the current matList.")
   print("")
-} else if (file.exists(file.path(LSMCodeRConfig$srcdir,"objects","matList1.RDS")) & !exists("matList")){
+} else if (file.exists(matListRDS) & !exists("matList")){
   print("Loading matList from disk.")
-  matList <- readRDS(file=file.path(LSMCodeRConfig$srcdir,"objects","matList1.RDS"))
+  matList <- readRDS(file=matListRDS)
 } else {
   print("There is no matList on disk or in memory.")
   print("Starting matList from scratch.")
   print("Go get a coffee, this will take a while.")
   matList <- list()
 }
+
 stimulusParametersList <- list()
 # set up file handling
 for (myFile in physiologyFilesSP) {
   # foreach(myFile=physiologyFilesSP, .packages = "hdf5r") %dopar% {
+    # cat(myFile,file="C:/Users/Aaron/Desktop/parallelDebuggingHell.txt",append=T,sep="\n")
   matFileCode <- substring(basename(myFile),1,4)
+  # cat(matFileCode,file="C:/Users/Aaron/Desktop/parallelDebuggingHell.txt",append=T,sep="\n")
   animal <- list()
   print(paste("Starting to parse",matFileCode))
   if (is.null(matList[[matFileCode]])){
     # get the transition frames for the mat file
     source(file.path(LSMCodeRConfig$srcdir,"parseImageForGreenFlashAndLSMandStimLogs.R"))
     currentStimulusParameters <- makeTrial(myFile)
+    # cat("-",file="C:/Users/Aaron/Desktop/parallelDebuggingHell.txt",append=T)
     # set up ROIs
     
     
     matFileROIListByZ <- list()
     for (tectumROIforZ in 1:nrow(tempDF <- tectumROIs[as.character(tectumROIs$matfile)==matFileCode,])) {
       print(tectumROIforZ)
-      matFileROIListByZ[[paste("z",tectumROIforZ,sep="_")]] = getROIs(roiEdgeLength = roiEdgeLength,
+      matFileROIListByZ[[paste("z",tempDF[tectumROIforZ,"z"],sep="_")]] = getROIs(roiEdgeLength = roiEdgeLength,
               x=tempDF[tectumROIforZ,"x"],
               y=tempDF[tectumROIforZ,"y"],
               w=tempDF[tectumROIforZ,"w"],
@@ -97,11 +103,12 @@ for (myFile in physiologyFilesSP) {
   }
   stimulusParametersList[[matFileCode]] <- animal
   saveRDS(stimulusParametersList,file=file.path(LSMCodeRConfig$srcdir,"objects","stimParList.RDS"),compress = TRUE)
+  count
 }
 
-saveRDS(matList,file=file.path(LSMCodeRConfig$srcdir,"objects","matList1.RDS"),compress = TRUE)
+saveRDS(matList,file=matListRDS,compress = TRUE)
 
-ggplot(statisticsList[[stimulation]],aes(xpos,ypos,fill=snr.mean)) + 
+ggplot(statisticsList[[stimulation]][["z_9"]],aes(xpos,ypos,fill=dff.mean)) + 
   geom_raster(interpolate = F) + 
   scale_fill_gradientn(colors = jet(20)) +
   coord_fixed() + scale_y_reverse()
