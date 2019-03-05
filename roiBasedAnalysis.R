@@ -1,4 +1,3 @@
-tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
 
 anatomyFiles <- dir(imageDir,patt="^[A-Z]{3}-")
 physiologyFilesSP <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
