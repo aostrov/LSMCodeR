@@ -69,6 +69,8 @@ for (time in 1:1650){
 colnames(slice.identity) <- c("slice","z_plane","time")
 slice.transitions <- slice.identity[lsm.transition.frames,]
 
+for (file in multiplaneFiles){
+  writeNrrdForROISelection(file,"C:/Users/Aaron/Desktop/nrrdOrder/")
 }
 
 reorderImageSlices <- c(2,1,20:5)
@@ -81,3 +83,17 @@ for (i in ((1:20)-1) ){
 }
 first <- seq(from=(13+1),to=(13+1800),by=20)
 
+# write test images to make ROIs
+dirByDate <- function(directory=imageDir,date="2019-03-05"){
+  subsettedDirByDate <- dir(directory,full=T)[
+    grepl(date,file.info(dir(imageDir,full=T))$mtime)
+    ]
+  return(subsettedDirByDate)
+}
+recent <- dirByDate()
+recentPhysio <- recent[grepl("SabineSimple",recent)]
+
+for (image in recentPhysio) {
+  print(image)
+  writeNrrdForROISelection(file.path(image,paste(basename(image),"mat",sep=".")),"C:/Users/Aaron/Desktop/nrrdOrder/")
+}
