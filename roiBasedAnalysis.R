@@ -1,17 +1,17 @@
 
 anatomyFiles <- dir(imageDir,patt="^[A-Z]{3}-")
 physiologyFilesSP <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
+multiplaneFiles <- setdiff(
+  dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE),
+  physiologyFilesSP
+  )
 # matFile <- "/Volumes/home/hdf5/20181204-gcamp7F-7d-SabineBars-1planeSP.mat"
 # matFile <- file.path(imageDir,"AAFA-gen-A-laser3-SabineSimple","AAFA-gen-A-laser3-SabineSimple.mat")
 # file.h5 <- H5File$new(file.path(matFile), mode = "r")
 # imageDataSlice<-file.h5[["imagedata"]]
 roiEdgeLength <- 26
-matListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","matListSP.RDS")
-registerDoParallel(cores = 2)
-# registerDoParallel(cores = 2)
-
-# lapply(physiologyFilesSP)
-
+matListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","matList1.RDS")
+stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParList.RDS")
 
 if (file.exists(matListRDS) & exists("matList")) {
   print("matList exists and is already loaded. ")
@@ -27,20 +27,32 @@ if (file.exists(matListRDS) & exists("matList")) {
   matList <- list()
 }
 
-stimulusParametersList <- list()
+if (file.exists(stimParListRDS) & exists("stimulusParametersList")) {
+  print("stimulusParametersList exists and is already loaded. ")
+  print("Using the current stimulusParametersList")
+  print("")
+} else if (file.exists(stimParListRDS) & !exists("stimulusParametersList")){
+  print("Loading stimulusParametersList from disk.")
+  stimulusParametersList <- readRDS(file=stimParListRDS)
+} else {
+  print("There is no stimulusParametersList on disk or in memory.")
+  print("Starting stimulusParametersList from scratch.")
+  stimulusParametersList <- list()
+}
+
+
+
 # set up file handling
-for (myFile in physiologyFilesSP) {
+for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
   # foreach(myFile=physiologyFilesSP, .packages = "hdf5r") %dopar% {
-    # cat(myFile,file="C:/Users/Aaron/Desktop/parallelDebuggingHell.txt",append=T,sep="\n")
   matFileCode <- substring(basename(myFile),1,4)
-  # cat(matFileCode,file="C:/Users/Aaron/Desktop/parallelDebuggingHell.txt",append=T,sep="\n")
   animal <- list()
   print(paste("Starting to parse",matFileCode))
   if (is.null(matList[[matFileCode]])){
     # get the transition frames for the mat file
     source(file.path(LSMCodeRConfig$srcdir,"parseImageForGreenFlashAndLSMandStimLogs.R"))
+    print("Passed parseImageForGreenFlash...")
     currentStimulusParameters <- makeTrial(myFile)
-    # cat("-",file="C:/Users/Aaron/Desktop/parallelDebuggingHell.txt",append=T)
     # set up ROIs
     
     
@@ -93,7 +105,7 @@ for (myFile in physiologyFilesSP) {
       
     }
     matList[[substr(stimulation,1,4)]] <- statisticsList
-    saveRDS(matList,file=file.path(LSMCodeRConfig$srcdir,"objects","matList1.RDS"),compress = TRUE)
+    saveRDS(matList,file=matListRDS,compress = TRUE)
     # clean up
     file.h5$close()
     imageDataSlice$close()
@@ -101,7 +113,7 @@ for (myFile in physiologyFilesSP) {
     print(paste(matFileCode, "already exists in matList, skipping"))
   }
   stimulusParametersList[[matFileCode]] <- animal
-  saveRDS(stimulusParametersList,file=file.path(LSMCodeRConfig$srcdir,"objects","stimParList.RDS"),compress = TRUE)
+  saveRDS(stimulusParametersList,file=stimParListRDS,compress = TRUE)
   count
 }
 
