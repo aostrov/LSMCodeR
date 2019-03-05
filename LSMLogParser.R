@@ -38,3 +38,13 @@ for (i in transitions.stimdf.bar$correctedMilliseconds) {
 }
 # not sure if I want the vector of frames as is, or if i want to offset it by +1 to account for getting the next frame...
 
+count=0
+slice.identity <- data.frame(slice=integer(0),z_plane=integer(0),time=integer(0))
+for (time in 1:1650){
+  for (z_plane in 1:20){
+    count=count+1
+    slice.identity <- rbind(slice.identity,c(count,z_plane,time))
+  }
+}
+colnames(slice.identity) <- c("slice","z_plane","time")
+slice.transitions <- slice.identity[lsm.transition.frames,]

@@ -420,6 +420,7 @@ makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow
         backgroundLengthInMilliseconds <- tmpdf[tmpdf$description=="background","time"] # in ms
         
         if ( imageDataSlice.dims[['z']] > 1 ) {
+          print("z > 1, using multiple planes")
           start <- slice.transitions[count,"time"] # in frames
         } else {
           start <- lsm.transition.frames[count]
@@ -513,6 +514,24 @@ getBaseline <- function(imageStack,rangeOfFrames=NULL,xyzDimOrder=c(3,2,1),x=1,w
   }
   
   return(floor(mean(imageStack[rangeOfFrames,(y:(y+height)),(x:(x+width))])))
+}
+
+writeNrrdForROISelection <- function(matFile,outPath,testTime=100,numZSlices=20,bitDepth="short"){
+  file.h5 <- H5File$new(matFile, 
+                        mode = "r")
+  imageDataSlice<-file.h5[["imagedata"]]
+  imageDataSlice.dims <- imageDataSlice$dims
+  names(imageDataSlice.dims) <- c('t','c','z','y','x')
+  animal <- substr(basename(matFile),1,4)
+  count=1
+  for (i in 1:imageDataSlice.dims[['z']]){
+    write.nrrd(aperm(imageDataSlice[testTime,,i,,],c(2,1)),
+               file=file.path(outPath,paste(animal,"_roiSelection-",i,".nrrd",sep="")),
+               dtype = bitDepth)
+    count=count+1
+  }
+  imageDataSlice$close()
+  file.h5$close_all()
 }
 
 ###############################
