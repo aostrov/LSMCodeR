@@ -97,3 +97,36 @@ for (image in recentPhysio) {
   print(image)
   writeNrrdForROISelection(file.path(image,paste(basename(image),"mat",sep=".")),"C:/Users/Aaron/Desktop/nrrdOrder/")
 }
+
+##############
+## Analysis ##
+##############
+analysisDF <- c()
+for (k in 1:length(matList)){
+  analysisDF.animals <- c()
+  animal <- names(matList[k])
+  print(paste("animal:",animal))
+  for (j in 1: length(matList[[k]])){
+    analysisDF.stimulus <- c()
+    stimulus <- substr(names(matList[[k]][j]),nchar(names(matList[[k]][j]))-2,nchar(names(matList[[k]][j])))
+    print(paste("stimulus:",stimulus))
+    for (i in 1:length(matList[[k]][[j]])) {
+      analysisDF.zplane <- c()
+      z_plane <- names(matList[[k]][[j]][i])
+      analysisDF.zplane <- matList[[k]][[j]][[i]][,c("dff.mean","background.mean")]
+      analysisDF.zplane$z_plane <- as.factor(z_plane)
+      analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
+    }
+    analysisDF.stimulus$stimulus <- as.factor(stimulus)
+    analysisDF.animals <- rbind(analysisDF.animals,analysisDF.stimulus)
+  }
+  analysisDF.animals$animal <- as.factor(animal)
+  analysisDF <- rbind(analysisDF,analysisDF.animals)
+}
+
+
+ggplot(analysisDF.subset,aes(background.mean,dff.mean)) + 
+  geom_jitter(aes(color=animal))
+
+# background > 25 and dff > 0.05
+analysisDF.subset <- subset(analysisDF,background.mean>25 & dff.mean>0.05)

@@ -113,19 +113,28 @@ for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
 
 saveRDS(matList,file=matListRDS,compress = TRUE)
 
-ggplot(statisticsList[[stimulation]][["z_9"]],aes(xpos,ypos,fill=dff.mean)) + 
-  geom_raster(interpolate = F) + 
-  scale_fill_gradientn(colors = jet(20)) +
-  coord_fixed() + scale_y_reverse()
+analysisDF <- c()
+for (k in 1:length(matList)){
+  analysisDF.animals <- c()
+  animal <- names(matList[k])
+  print(paste("animal:",animal))
+  for (j in 1: length(matList[[k]])){
+    analysisDF.stimulus <- c()
+    stimulus <- substr(names(matList[[k]][j]),nchar(names(matList[[k]][j]))-2,nchar(names(matList[[k]][j])))
+    print(paste("stimulus:",stimulus))
+    for (i in 1:length(matList[[k]][[j]])) {
+      analysisDF.zplane <- c()
+      z_plane <- names(matList[[k]][[j]][i])
+      analysisDF.zplane <- matList[[k]][[j]][[i]][,c("dff.mean","background.mean")]
+      analysisDF.zplane$z_plane <- as.factor(z_plane)
+      analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
+    }
+    analysisDF.stimulus$stimulus <- as.factor(stimulus)
+    analysisDF.animals <- rbind(analysisDF.animals,analysisDF.stimulus)
+  }
+  analysisDF.animals$animal <- as.factor(animal)
+  analysisDF <- rbind(analysisDF,analysisDF.animals)
+}
 
-
-
-# here I need to combine a few things
-
-# for each ROI I would be able to tell when/in which frame the max occurs
-sapply(roiSNR,function(x) {which.max(apply(x[,,90:150], 3, mean))+90})
-
-ggplot(matList[[3]][[1]],aes(xpos,ypos,fill=snr.mean)) + 
-  geom_raster(interpolate = F) + 
-  scale_fill_gradientn(colors = jet(20)) +
-  coord_fixed() + scale_y_reverse()
+ggplot(subset(analysisDF,animal=="AAMA"),aes(background.mean,dff.mean)) + 
+  +   geom_jitter(aes(color=z_plane)) + facet_wrap(~stimulus)
