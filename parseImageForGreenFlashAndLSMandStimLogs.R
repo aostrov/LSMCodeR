@@ -32,9 +32,7 @@ if (imageDataSlice.dims[['z']] > 1 ) {
       slicesWithBigNumbers.begin <- c(slicesWithBigNumbers.begin,i)
     }
   }
-  startOfStimulations <- max(slicesWithBigNumbers.begin)
-  endOfFirstGreenFlash <- startOfStimulations + 1
-  
+
 } else {
   flashmean <- mean(imageDataSlice[1:100,,,10:20,10:20])
   flashsd <- sd(imageDataSlice[1:100,,,10:20,10:20])
@@ -46,17 +44,15 @@ if (imageDataSlice.dims[['z']] > 1 ) {
     }
   }
   
-  startOfStimulations <- max(slicesWithBigNumbers.begin) # last slice of starting green flash
   
 }
-  
-# slicesWithBigNumbers.end <- c()
-# for (i in (33000-2000):33000){
-#   if (mean(imageDataSlice[i,,,10:20,10:20])>(flashmean+2*flashsd)){
-#     slicesWithBigNumbers.end <- c(slicesWithBigNumbers.end,i)
-#   }
-# }
-# endOfStimulations <- min(slicesWithBigNumbers.end) # first slice of ending flash
+
+if (is.null(slicesWithBigNumbers.begin)) {
+  print(paste(matFileCode, "does not appear to have a green flash :( Setting slicesWithBigNumbers.begin to 0."))
+  slicesWithBigNumbers.begin <- 1
+}
+startOfStimulations <- max(slicesWithBigNumbers.begin) # last slice of starting green flash
+
 
 endOfFirstGreenFlash <- startOfStimulations + 1
 print(paste("end of first green flash:",endOfFirstGreenFlash))
