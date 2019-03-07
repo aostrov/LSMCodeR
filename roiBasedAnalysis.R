@@ -1,4 +1,4 @@
-
+tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
 anatomyFiles <- dir(imageDir,patt="^[A-Z]{3}-")
 physiologyFilesSP <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
 multiplaneFiles <- setdiff(
@@ -65,12 +65,6 @@ for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
               w=tempDF[tectumROIforZ,"w"],
               h=tempDF[tectumROIforZ,"h"])
     }
-    
-    # roiList <- getROIs(roiEdgeLength = roiEdgeLength,
-    #                    x=tectumROIs[tectumROIs$matfile==matFileCode,"x"],
-    #                    y=tectumROIs[tectumROIs$matfile==matFileCode,"y"],
-    #                    w=tectumROIs[tectumROIs$matfile==matFileCode,"w"],
-    #                    h=tectumROIs[tectumROIs$matfile==matFileCode,"h"]) # ~10um ROIs
     
     animal[[basename(myFile)]] <- currentStimulusParameters
     statisticsList <- list()

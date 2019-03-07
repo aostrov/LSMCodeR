@@ -420,7 +420,6 @@ makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow
         backgroundLengthInMilliseconds <- tmpdf[tmpdf$description=="background","time"] # in ms
         
         if ( imageDataSlice.dims[['z']] > 1 ) {
-          print("z > 1, using multiple planes")
           start <- slice.transitions[count,"time"] # in frames
         } else {
           start <- lsm.transition.frames[count]
