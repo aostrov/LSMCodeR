@@ -138,3 +138,5 @@ for (k in 1:length(matList)){
 
 ggplot(subset(analysisDF,animal=="AAMA"),aes(background.mean,dff.mean)) + 
   +   geom_jitter(aes(color=z_plane)) + facet_wrap(~stimulus)
+
+analysisDF.subset <- subset(analysisDF,background.mean>25 & dff.mean>0.05)
