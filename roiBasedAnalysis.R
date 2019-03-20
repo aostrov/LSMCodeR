@@ -1,18 +1,17 @@
 tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
-
 anatomyFiles <- dir(imageDir,patt="^[A-Z]{3}-")
 physiologyFilesSP <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
+multiplaneFiles <- setdiff(
+  dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE),
+  physiologyFilesSP
+  )
 # matFile <- "/Volumes/home/hdf5/20181204-gcamp7F-7d-SabineBars-1planeSP.mat"
 # matFile <- file.path(imageDir,"AAFA-gen-A-laser3-SabineSimple","AAFA-gen-A-laser3-SabineSimple.mat")
 # file.h5 <- H5File$new(file.path(matFile), mode = "r")
 # imageDataSlice<-file.h5[["imagedata"]]
 roiEdgeLength <- 26
-matListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","matListSP.RDS")
-registerDoParallel(cores = 2)
-# registerDoParallel(cores = 2)
-
-# lapply(physiologyFilesSP)
-
+matListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","matList1.RDS")
+stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParList.RDS")
 
 if (file.exists(matListRDS) & exists("matList")) {
   print("matList exists and is already loaded. ")
@@ -28,20 +27,32 @@ if (file.exists(matListRDS) & exists("matList")) {
   matList <- list()
 }
 
-stimulusParametersList <- list()
+if (file.exists(stimParListRDS) & exists("stimulusParametersList")) {
+  print("stimulusParametersList exists and is already loaded. ")
+  print("Using the current stimulusParametersList")
+  print("")
+} else if (file.exists(stimParListRDS) & !exists("stimulusParametersList")){
+  print("Loading stimulusParametersList from disk.")
+  stimulusParametersList <- readRDS(file=stimParListRDS)
+} else {
+  print("There is no stimulusParametersList on disk or in memory.")
+  print("Starting stimulusParametersList from scratch.")
+  stimulusParametersList <- list()
+}
+
+
+
 # set up file handling
-for (myFile in physiologyFilesSP) {
+for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
   # foreach(myFile=physiologyFilesSP, .packages = "hdf5r") %dopar% {
-    # cat(myFile,file="C:/Users/Aaron/Desktop/parallelDebuggingHell.txt",append=T,sep="\n")
   matFileCode <- substring(basename(myFile),1,4)
-  # cat(matFileCode,file="C:/Users/Aaron/Desktop/parallelDebuggingHell.txt",append=T,sep="\n")
   animal <- list()
   print(paste("Starting to parse",matFileCode))
   if (is.null(matList[[matFileCode]])){
     # get the transition frames for the mat file
     source(file.path(LSMCodeRConfig$srcdir,"parseImageForGreenFlashAndLSMandStimLogs.R"))
+    print("Passed parseImageForGreenFlash...")
     currentStimulusParameters <- makeTrial(myFile)
-    # cat("-",file="C:/Users/Aaron/Desktop/parallelDebuggingHell.txt",append=T)
     # set up ROIs
     
     
@@ -54,12 +65,6 @@ for (myFile in physiologyFilesSP) {
               w=tempDF[tectumROIforZ,"w"],
               h=tempDF[tectumROIforZ,"h"])
     }
-    
-    # roiList <- getROIs(roiEdgeLength = roiEdgeLength,
-    #                    x=tectumROIs[tectumROIs$matfile==matFileCode,"x"],
-    #                    y=tectumROIs[tectumROIs$matfile==matFileCode,"y"],
-    #                    w=tectumROIs[tectumROIs$matfile==matFileCode,"w"],
-    #                    h=tectumROIs[tectumROIs$matfile==matFileCode,"h"]) # ~10um ROIs
     
     animal[[basename(myFile)]] <- currentStimulusParameters
     statisticsList <- list()
@@ -94,7 +99,7 @@ for (myFile in physiologyFilesSP) {
       
     }
     matList[[substr(stimulation,1,4)]] <- statisticsList
-    saveRDS(matList,file=file.path(LSMCodeRConfig$srcdir,"objects","matList1.RDS"),compress = TRUE)
+    saveRDS(matList,file=matListRDS,compress = TRUE)
     # clean up
     file.h5$close()
     imageDataSlice$close()
@@ -102,25 +107,36 @@ for (myFile in physiologyFilesSP) {
     print(paste(matFileCode, "already exists in matList, skipping"))
   }
   stimulusParametersList[[matFileCode]] <- animal
-  saveRDS(stimulusParametersList,file=file.path(LSMCodeRConfig$srcdir,"objects","stimParList.RDS"),compress = TRUE)
+  saveRDS(stimulusParametersList,file=stimParListRDS,compress = TRUE)
   count
 }
 
 saveRDS(matList,file=matListRDS,compress = TRUE)
 
-ggplot(statisticsList[[stimulation]][["z_9"]],aes(xpos,ypos,fill=dff.mean)) + 
-  geom_raster(interpolate = F) + 
-  scale_fill_gradientn(colors = jet(20)) +
-  coord_fixed() + scale_y_reverse()
+analysisDF <- c()
+for (k in 1:length(matList)){
+  analysisDF.animals <- c()
+  animal <- names(matList[k])
+  print(paste("animal:",animal))
+  for (j in 1: length(matList[[k]])){
+    analysisDF.stimulus <- c()
+    stimulus <- substr(names(matList[[k]][j]),nchar(names(matList[[k]][j]))-2,nchar(names(matList[[k]][j])))
+    print(paste("stimulus:",stimulus))
+    for (i in 1:length(matList[[k]][[j]])) {
+      analysisDF.zplane <- c()
+      z_plane <- names(matList[[k]][[j]][i])
+      analysisDF.zplane <- matList[[k]][[j]][[i]][,c("dff.mean","background.mean")]
+      analysisDF.zplane$z_plane <- as.factor(z_plane)
+      analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
+    }
+    analysisDF.stimulus$stimulus <- as.factor(stimulus)
+    analysisDF.animals <- rbind(analysisDF.animals,analysisDF.stimulus)
+  }
+  analysisDF.animals$animal <- as.factor(animal)
+  analysisDF <- rbind(analysisDF,analysisDF.animals)
+}
 
+ggplot(subset(analysisDF,animal=="AAMA"),aes(background.mean,dff.mean)) + 
+  +   geom_jitter(aes(color=z_plane)) + facet_wrap(~stimulus)
 
-
-# here I need to combine a few things
-
-# for each ROI I would be able to tell when/in which frame the max occurs
-sapply(roiSNR,function(x) {which.max(apply(x[,,90:150], 3, mean))+90})
-
-ggplot(matList[[3]][[1]],aes(xpos,ypos,fill=snr.mean)) + 
-  geom_raster(interpolate = F) + 
-  scale_fill_gradientn(colors = jet(20)) +
-  coord_fixed() + scale_y_reverse()
+analysisDF.subset <- subset(analysisDF,background.mean>25 & dff.mean>0.05)

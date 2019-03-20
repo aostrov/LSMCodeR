@@ -9,6 +9,8 @@ require("magick")
 require('ggplot2')
 require('squash')
 require('digest')
+require(doParallel)
+require(doSNOW)
 
 LSMCodeRConfig<-list()
 LSMCodeRConfig$srcdir<-normalizePath(dirname(attr(body(function() {}),'srcfile')$filename))
@@ -36,3 +38,5 @@ if (dir.exists("F:\\Imaging\\GCaMP7_tests\\20181204-g7")) {
 } else {
   print("Please set the variable 'imageDir' to something sensible.")
 }
+
+tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
