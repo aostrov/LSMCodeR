@@ -9,6 +9,7 @@ multiplaneFiles <- setdiff(
 # matFile <- file.path(imageDir,"AAFA-gen-A-laser3-SabineSimple","AAFA-gen-A-laser3-SabineSimple.mat")
 # file.h5 <- H5File$new(file.path(matFile), mode = "r")
 # imageDataSlice<-file.h5[["imagedata"]]
+pixelSize=0.8
 roiEdgeLength <- 26
 matListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","matList1.RDS")
 stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParList.RDS")
@@ -85,11 +86,13 @@ for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
           )
         }
       )
+      
+      saveRDS(rawDataForMatFileByROIs,file=file.path(LSMCodeRConfig$srcdir,"objects",paste(stimulation,".RDS",sep="")),compress = T)
       # statisticsList[[stimulation]]<- getUsefulStatisticsByROI(rawDataForMatFileByROIs,matFileROIListByZ,
       #                                                          analysisWindow=c(150:750),backgroundWindow=c(0:100))
       statisticsList[[stimulation]]<- lapply(rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
-                                                                      analysisWindow=c((900/imageDataSlice.dims$z):(1500/imageDataSlice.dims$z)),
-                                                                      backgroundWindow=c((700/imageDataSlice.dims$z):(900/imageDataSlice.dims$z)))
+                                                                      analysisWindow=c((900/length(rawDataForMatFileByROIs)):(1500/length(rawDataForMatFileByROIs))),
+                                                                      backgroundWindow=c((700/length(rawDataForMatFileByROIs)):(900/length(rawDataForMatFileByROIs))))
       
       attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=currentStimulusParameters[[stimulation]]$start,
                                                               frame.end = currentStimulusParameters[[stimulation]]$end)
@@ -125,7 +128,7 @@ for (k in 1:length(matList)){
     for (i in 1:length(matList[[k]][[j]])) {
       analysisDF.zplane <- c()
       z_plane <- names(matList[[k]][[j]][i])
-      analysisDF.zplane <- matList[[k]][[j]][[i]][,c("dff.mean","background.mean")]
+      analysisDF.zplane <- matList[[k]][[j]][[i]][,c("snr.mean","background.mean","dff.mean")]
       analysisDF.zplane$z_plane <- as.factor(z_plane)
       analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
     }
@@ -136,7 +139,14 @@ for (k in 1:length(matList)){
   analysisDF <- rbind(analysisDF,analysisDF.animals)
 }
 
-ggplot(subset(analysisDF,animal=="AAMA"),aes(background.mean,dff.mean)) + 
-  +   geom_jitter(aes(color=z_plane)) + facet_wrap(~stimulus)
+ggplot(analysisDF,aes(background.mean,dff.mean)) + 
+   geom_jitter(aes(color=animal)) # + facet_wrap(~stimulus)
+
+
+ggplot(subset(analysisDF,animal=="AAMA"),aes(background.mean,snr.mean)) + 
+   geom_jitter(aes(color=z_plane))# + facet_wrap(~stimulus)
 
 analysisDF.subset <- subset(analysisDF,background.mean>25 & dff.mean>0.05)
+
+# Go back to matList to find all the statistics for an ROI
+matList[[1]][[1]][[1]]["ROI_1",]
