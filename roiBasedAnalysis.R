@@ -88,8 +88,8 @@ for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
       # statisticsList[[stimulation]]<- getUsefulStatisticsByROI(rawDataForMatFileByROIs,matFileROIListByZ,
       #                                                          analysisWindow=c(150:750),backgroundWindow=c(0:100))
       statisticsList[[stimulation]]<- lapply(rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
-                                                                      analysisWindow=c((140/20):(720/20)),
-                                                                      backgroundWindow=c(0:(900/20)))
+                                                                      analysisWindow=c((900/imageDataSlice.dims$z):(1500/imageDataSlice.dims$z)),
+                                                                      backgroundWindow=c((700/imageDataSlice.dims$z):(900/imageDataSlice.dims$z)))
       
       attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=currentStimulusParameters[[stimulation]]$start,
                                                               frame.end = currentStimulusParameters[[stimulation]]$end)
