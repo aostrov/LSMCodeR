@@ -103,48 +103,60 @@ processSingleStimulus <- function(myList,stimulus=1,block=1,
 
 processSingleStimulus.lapply <- function(myList,
                                   outputType=c("snr","raw","dff"),writeNRRD=FALSE,
-                                  downSampleImage=FALSE, setFloor = FALSE, image,...) {
+                                  downSampleImage=FALSE, setFloor = FALSE, image,
+                                  downSampleInTime=1,z_plane=1,
+                                  resizeFactor=1, outDir=file.path(LSMCodeRConfig$srcdir,"images"),
+                                  offsetValue=399,
+                                  ...) {
   # I'll probably want some kind of checking here for existing
   # files, etc
   
-  cat(".")
+  cat("starting",sep="\n")
   outputType = match.arg(outputType)
+  image.dims=image$dims
+  names(image.dims) <- c('t','c','z','y','x')
 
   rangeOfImages <- seq(from=myList$start,
                        to=myList$end,
-                       by=myList$timeResampled)
-  
-  myImage <- image[rangeOfImages,,,,]
+                       by=downSampleInTime)
   
   if (downSampleImage){
     myImage <- apply(
-      image[rangeOfImages,,,,],
+      image[rangeOfImages,,z_plane,,],
       1,
-      function(x) resizeImage(x,myList$resize[1],
-                              myList$resize[2]))
+      function(x) resizeImage(x,
+                              image.dims[['x']]/resizeFactor,
+                              image.dims[['y']]/resizeFactor)
+      )
     
-    dim(myImage)<-c(myList$resize[1],
-                    myList$resize[2],
+    dim(myImage)<-c(image.dims[['x']]/resizeFactor,
+                    image.dims[['y']]/resizeFactor,
                     length(rangeOfImages))
+  } else {
+    myImage <- aperm(image[rangeOfImages,,z_plane,,],c(3,2,1))
   }
   
-  myImage <- returnOffsetedImage(myImage,offsetValue=pixelOffset, setFloor = setFloor, ...)
+  myImage <- returnOffsetedImage(myImage,offsetValue=offsetValue, setFloor = setFloor, ...)
   
   if (outputType == 'dff'){
     myImage <- makeDFF(
       myImage,
       xyzDimOrder = c(1,2,3),
-      backgroundSlices=myList$backgroundSlices
+      backgroundSlices=c(0:length(myList$backgroundSlices))
     )
     
   } else if (outputType=="snr") {
     myImage <- makeSNRByPixel(myImage,
-                              backgroundSlices=myList$backgroundSlices
+                              backgroundSlices=c(0:length(myList$backgroundSlices))
     )
   }
   
   if (writeNRRD){
-    outfile <- file.path(myList$outDir,paste(myList$fileBaseName,"_",outputType,".nrrd",sep=""))
+    outfile <- file.path(outDir,paste(myList$matFile,"_stimulus-",myList$stimulus,
+                                      "_block-",myList$block,"_",
+                                      outputType,
+                                      "_zplane-",z_plane,".nrrd",
+                                      sep=""))
     # print(paste("Writing to disk: ",outfile,sep=""))
     write.nrrd(myImage,file=outfile) #,dtype="short"
   }
@@ -336,14 +348,22 @@ roundToNearestDivisibleInteger <- function(numerator,divisor,roundUp=FALSE){
 
 
 makeDFF<-function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
+  # establish what the actual dimensions are of the image in X, Y, and Z
   zdim<-dim(imageStack)[xyzDimOrder[3]]
   xdim<-dim(imageStack)[xyzDimOrder[1]]
   ydim<-dim(imageStack)[xyzDimOrder[2]]
+
+  # get background
   testSliceBackground<-apply(imageStack[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),mean)
+  
+  # subtract background
   testSliceBackgroundSubtract<-apply(imageStack[,,],3,function(x) x-testSliceBackground)
   dim(testSliceBackgroundSubtract)<-c(xdim,ydim,zdim)
+  
+  # divide by background
   testSliceDFF<-apply(testSliceBackgroundSubtract, 3, function(x) x/testSliceBackground)
   dim(testSliceDFF)<-c(xdim,ydim,zdim)
+  
   return(testSliceDFF)
 }
 
@@ -372,7 +392,7 @@ makeSNRByPixel<-function(imageStack,backgroundSlices=c(75:85),xyzDimOrder=c(1,2,
   xdim<-dim(imageStack)[xyzDimOrder[1]]
   ydim<-dim(imageStack)[xyzDimOrder[2]]
   
-  
+  # backgroundSlices <- c(0:length(backgroundSlices))
   noise <- apply(imageStack[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),calcSNR.noise)
   snr <- apply(imageStack,xyzDimOrder[3],function(x) {x/noise} )
   dim(snr) <- c(xdim,ydim,zdim)
@@ -404,16 +424,16 @@ calcSNR.noise <- function(vector) {
 makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow=300) {
   trials <- list()
   count=1
-  for (stimulus in 1:nrow(protocolList[[stimProtocol]]$presentationMatrix)) {
-    for (block in 1:ncol(protocolList[[stimProtocol]]$presentationMatrix)) {
+  for (block in 1:nrow(protocolList[[stimProtocol]]$presentationMatrix)) {
+    for (stimulus in 1:ncol(protocolList[[stimProtocol]]$presentationMatrix)) {
       for (plane in seq(imageDataSlice.dims[['z']])) {
         tmpdf <- subset(
           protocolList[[stimProtocol]]$stimulationSections,
-          section==protocolList[[stimProtocol]]$presentationMatrix[stimulus,block]
+          section==protocolList[[stimProtocol]]$presentationMatrix[block,stimulus]
         )
         description <- subset(
           protocolList[[stimProtocol]]$stimulationSections,
-          section==protocolList[[stimProtocol]]$presentationMatrix[stimulus,block] & 
+          section==protocolList[[stimProtocol]]$presentationMatrix[block,stimulus] & 
             ( description!="background" & description!="settle" )
         )$description
         
@@ -429,7 +449,9 @@ makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow
           start : 
             (start + (backgroundLengthInMilliseconds * 0.1) / imageDataSlice.dims[['z']] ) 
         )
+        
         stimulusPeriod <- sum(tmpdf$time) / imageDataSlice.dims[['z']] # in ms
+        
         end <- start + 
           (stimulusPeriod * 0.1) + 
           ( analysisWindow / imageDataSlice.dims[['z']] )
@@ -441,7 +463,8 @@ makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow
         "stimulusProtocol"=stimProtocol,
         "block"=block,
         "stimulus"=stimulus,
-        "plane"=plane,
+        "plane"=plane, #at the moment plane is basically ignored, and will always 
+                       # reflect the total number of planes without any indication of how each plane might differ.
         "start"=start,
         "end"=end,
         "stimulusPeriodPerSlice"=stimulusPeriod,
@@ -486,10 +509,10 @@ downSampleMean2x2<-function(imageData){
   return(t(round(smallArray)))
 }
 
-returnOffsetedImage <- function(imageData,xyzDimOrder=c(1,2,3),offsetValue,setFloor=TRUE,floor=0) {
-  zdim<-dim(imageData)[xyzDimOrder[3]]
-  xdim<-dim(imageData)[xyzDimOrder[1]]
-  ydim<-dim(imageData)[xyzDimOrder[2]]
+returnOffsetedImage <- function(imageData,xyzDimOrder=c(1,2,3),offsetValue,setFloor=FALSE,floor=0) {
+  # zdim<-dim(imageData)[xyzDimOrder[3]]
+  # xdim<-dim(imageData)[xyzDimOrder[1]]
+  # ydim<-dim(imageData)[xyzDimOrder[2]]
   
   imageData <- imageData - offsetValue
 
