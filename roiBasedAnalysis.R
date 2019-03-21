@@ -120,38 +120,3 @@ for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
 }
 
 saveRDS(matList,file=matListRDS,compress = TRUE)
-
-analysisDF <- c()
-for (k in 1:length(matList)){
-  analysisDF.animals <- c()
-  animal <- names(matList[k])
-  print(paste("animal:",animal))
-  for (j in 1: length(matList[[k]])){
-    analysisDF.stimulus <- c()
-    stimulus <- substr(names(matList[[k]][j]),nchar(names(matList[[k]][j]))-2,nchar(names(matList[[k]][j])))
-    print(paste("stimulus:",stimulus))
-    for (i in 1:length(matList[[k]][[j]])) {
-      analysisDF.zplane <- c()
-      z_plane <- names(matList[[k]][[j]][i])
-      analysisDF.zplane <- matList[[k]][[j]][[i]][,c("snr.mean","background.mean","dff.mean")]
-      analysisDF.zplane$z_plane <- as.factor(z_plane)
-      analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
-    }
-    analysisDF.stimulus$stimulus <- as.factor(stimulus)
-    analysisDF.animals <- rbind(analysisDF.animals,analysisDF.stimulus)
-  }
-  analysisDF.animals$animal <- as.factor(animal)
-  analysisDF <- rbind(analysisDF,analysisDF.animals)
-}
-
-ggplot(analysisDF,aes(background.mean,dff.mean)) + 
-   geom_jitter(aes(color=animal)) # + facet_wrap(~stimulus)
-
-
-ggplot(subset(analysisDF,animal=="AAMA"),aes(background.mean,snr.mean)) + 
-   geom_jitter(aes(color=z_plane))# + facet_wrap(~stimulus)
-
-analysisDF.subset <- subset(analysisDF,background.mean>25 & dff.mean>0.05)
-
-# Go back to matList to find all the statistics for an ROI
-matList[[1]][[1]][[1]]["ROI_1",]
