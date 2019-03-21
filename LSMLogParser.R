@@ -4,6 +4,9 @@
                      # "20181204-gcamp7F-7d-SabineBars-1plane-2SP",
                      # "lsmlog_acq.xml")
 # lsmLogFile <- file.path(logdir,"lsmlog_acq.xml")
+lsmLogFile <- dir(file.path(dirname(myFile),"logs"),full=T,patt="lsmlog_")
+if (length(lsmLogFile)!=1) stop(paste("Check your lsmLogFile for file: ", myfile, sep=""))
+
 # read in some data
 logFileParsed <- readLogFileData(lsmLogFile)
 # decide if I need to discard some first set of frames

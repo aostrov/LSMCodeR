@@ -1,3 +1,5 @@
+stimLogFile <- dir(file.path(dirname(myFile),"logs"),full=T,patt="stimlog_")
+if (length(stimLogFile)!=1) stop(paste("Check your stimlog for file: ", myfile, sep=""))
 stimLog <- readLines(stimLogFile, warn=FALSE)
 stimLogCleaning1 <- stimLog[
   grep("@log",stimLog):length(stimLog)][grep("[[:graph:]]* [[:graph:]]* [[:graph:]]*|bar$|green$|red$",
