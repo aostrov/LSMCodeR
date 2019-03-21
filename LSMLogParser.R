@@ -10,7 +10,7 @@ if (length(lsmLogFile)!=1) stop(paste("Check your lsmLogFile for file: ", myfile
 # read in some data
 logFileParsed <- readLogFileData(lsmLogFile)
 # decide if I need to discard some first set of frames
-lsmLogFileShort <- logFileParsed[(nrow(logFileParsed) - framesSkipped):nrow(logFileParsed),]
+lsmLogFileShort <- logFileParsed[(nrow(logFileParsed) - protocolList$sabineProtocolSimple$framesSkipped):nrow(logFileParsed),]
 
 # logFileMetaData<-readLogFileMetaData(logFile)
 # logFileParsed<-readLogFileData(logFile)
@@ -43,8 +43,8 @@ for (i in transitions.stimdf.bar$correctedMilliseconds) {
 
 count=0
 slice.identity <- data.frame(slice=integer(0),z_plane=integer(0),time=integer(0))
-for (time in 1:1650){
-  for (z_plane in 1:20){
+for (time in 1:1650){ # FIXME
+  for (z_plane in 1:20){ # FIXME
     count=count+1
     slice.identity <- rbind(slice.identity,c(count,z_plane,time))
   }
