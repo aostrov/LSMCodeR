@@ -14,6 +14,11 @@ roiEdgeLength <- 26
 matListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","matList1.RDS")
 stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParList.RDS")
 
+cleanLSMAnalysis <- function(){
+  rm(matList)
+  rm(stimulusParametersList)
+}
+
 if (file.exists(matListRDS) & exists("matList")) {
   print("matList exists and is already loaded. ")
   print("Using the current matList.")
