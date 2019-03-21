@@ -84,20 +84,32 @@ for (i in ((1:20)-1) ){
 first <- seq(from=(13+1),to=(13+1800),by=20)
 
 # write test images to make ROIs
-dirByDate <- function(directory=imageDir,date="2019-03-05"){
+dirByDate <- function(date="2019-03-05",directory=imageDir){
   subsettedDirByDate <- dir(directory,full=T)[
-    grepl(date,file.info(dir(imageDir,full=T))$mtime)
+    grepl(date,file.info(dir(directory,full=T))$mtime)
     ]
   return(subsettedDirByDate)
 }
 recent <- dirByDate()
-recentPhysio <- recent[grepl("SabineSimple",recent)]
+recentPhysio <- recent[!grepl("Anatomy",recent)]
 
 for (image in recentPhysio) {
   print(image)
   writeNrrdForROISelection(file.path(image,paste(basename(image),"mat",sep=".")),"C:/Users/Aaron/Desktop/nrrdOrder/")
 }
 
+# save the relevant data from each ROI.
+# full data still exists as .mat files
+# but it might be nice to have the background
+# and signal areas saved externally
+test <- lapply(myFile, function(x) {
+  lapply(x,
+         function(y) {
+           background <- apply(y[,,750:850],3,mean)
+           signal <- apply(y[,,900:1200],3,mean)
+           return(list(background=background,signal=signal))
+         })
+})
 ##############
 ## Analysis ##
 ##############
@@ -128,5 +140,20 @@ for (k in 1:length(matList)){
 ggplot(analysisDF.subset,aes(background.mean,dff.mean)) + 
   geom_jitter(aes(color=animal))
 
+# plot a raster of the image
+ggplot(matList[[1]][[5]][[1]],aes(xpos,ypos,fill=dff.mean)) + 
+  geom_raster(interpolate = F) + 
+  scale_fill_gradientn(colors = jet(20)) +
+  coord_fixed() + scale_y_reverse()
+
 # background > 25 and dff > 0.05
 analysisDF.subset <- subset(analysisDF,background.mean>25 & dff.mean>0.05)
+
+for (plane in 1:20) {
+  yyy=lapply(
+    currentStimulusParameters, # list being worked on
+    processSingleStimulus.lapply, # function doing the work
+    outputType="dff",writeNRRD=T,downSampleImage=T,resizeFactor=2,image=imageDataSlice,z_plane=plane # other variables
+    )
+}
+
