@@ -61,7 +61,7 @@ for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
     currentStimulusParameters <- makeTrial(myFile)
     # set up ROIs
     
-    
+    print("setting up ROIs")
     matFileROIListByZ <- list()
     for (tectumROIforZ in 1:nrow(tempDF <- tectumROIs[as.character(tectumROIs$matfile)==matFileCode,])) {
       print(tectumROIforZ)
@@ -71,15 +71,14 @@ for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
               w=tempDF[tectumROIforZ,"w"],
               h=tempDF[tectumROIforZ,"h"])
     }
-    
+    print("finished setting up ROIs")
     animal[[basename(myFile)]] <- currentStimulusParameters
     statisticsList <- list()
     for (stimulation in names(currentStimulusParameters)){ # for a matfile get the raw data as Z plane and ROI
       # foreach(stimulation=names(currentStimulusParameters)) %dopar% {
       print(currentStimulusParameters[[stimulation]]$start)
-      rawDataForMatFileByROIs <- lapply( # outer lapply breaks down roiList by z-plane
-        matFileROIListByZ,
-        function(roiList) 
+      rawDataForMatFileByROIs <- mapply( # outer lapply breaks down roiList by z-plane
+        function(roiList,z) 
         {
         lapply( # inner lapply gets the raw statistics for each ROI
           roiList,
@@ -89,15 +88,20 @@ for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
           frame.end = currentStimulusParameters[[stimulation]]$end,
           offset = 399
           )
-        }
+        },
+        matFileROIListByZ,sub("z_","",names(matFileROIListByZ))
       )
       
-      saveRDS(rawDataForMatFileByROIs,file=file.path(LSMCodeRConfig$srcdir,"objects",paste(stimulation,".RDS",sep="")),compress = T)
+      saveRDS(rawDataForMatFileByROIs,
+              file=file.path(LSMCodeRConfig$srcdir,"objects",paste(stimulation,".RDS",sep="")),
+              compress = T)
       # statisticsList[[stimulation]]<- getUsefulStatisticsByROI(rawDataForMatFileByROIs,matFileROIListByZ,
       #                                                          analysisWindow=c(150:750),backgroundWindow=c(0:100))
-      statisticsList[[stimulation]]<- lapply(rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
-                                                                      analysisWindow=c((900/length(rawDataForMatFileByROIs)):(1500/length(rawDataForMatFileByROIs))),
-                                                                      backgroundWindow=c((700/length(rawDataForMatFileByROIs)):(900/length(rawDataForMatFileByROIs))))
+      statisticsList[[stimulation]]<- lapply(
+                                        rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
+                                        analysisWindow=c((900/length(rawDataForMatFileByROIs)):(1500/length(rawDataForMatFileByROIs))),
+                                        backgroundWindow=c((700/length(rawDataForMatFileByROIs)):(900/length(rawDataForMatFileByROIs)))
+                                      )
       
       attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=currentStimulusParameters[[stimulation]]$start,
                                                               frame.end = currentStimulusParameters[[stimulation]]$end)

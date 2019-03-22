@@ -267,7 +267,7 @@ getROIs <- function(numSubunits=NULL,roiEdgeLength=NULL,
 }
 
 
-getROIsRawDataFromHDF5.lapply <- function(roiListElement,hdf5Image.mat,frame.start,frame.end,z=1,offset=399) {
+getROIsRawDataFromHDF5.lapply <- function(roiListElement,z=1,hdf5Image.mat,frame.start,frame.end,offset=399) {
   tempY <- roiListElement$yRange
   tempX <- roiListElement$xRange
   # get hdf5 image and figure out which slices I need

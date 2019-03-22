@@ -19,11 +19,11 @@ for (k in 1:length(matList)){
   for (j in 1: length(matList[[k]])){
     analysisDF.stimulus <- c()
     stimulus <- substr(names(matList[[k]][j]),nchar(names(matList[[k]][j]))-2,nchar(names(matList[[k]][j])))
-    print(paste("stimulus:",stimulus))
+    # print(paste("stimulus:",stimulus))
     for (i in 1:length(matList[[k]][[j]])) {
       analysisDF.zplane <- c()
       z_plane <- names(matList[[k]][[j]][i])
-      analysisDF.zplane <- matList[[k]][[j]][[i]][,c("snr.mean","background.mean","dff.mean")]
+      analysisDF.zplane <- matList[[k]][[j]][[i]][,c("snr.mean","background.mean","dff.mean","snr.max","dff.max")]
       analysisDF.zplane$z_plane <- as.factor(z_plane)
       analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
     }
@@ -46,7 +46,7 @@ ggplot(subset(analysisDF,
               background.mean>20 &
                 background.mean<400 &
                 snr.mean > 3),
-       aes(background.mean,dff.mean)) + 
+       aes(background.mean,dff.max)) + 
   geom_jitter(aes(color=animal,size=snr.mean),alpha=0.3) + 
   facet_wrap(~geno, ncol=4)
 
