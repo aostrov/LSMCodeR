@@ -157,3 +157,102 @@ for (plane in 1:20) {
     )
 }
 
+######################################
+##### more parallel, less clever #####
+######################################
+
+stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParList.RDS")
+stimulusParametersList <- list()
+matList <- list()
+imageDir <- "/Volumes/Prospero"
+tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
+
+for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
+  # foreach(myFile=physiologyFilesSP, .packages = "hdf5r") %dopar% {
+  matFileCode <- substring(basename(myFile),1,4)
+  animal <- list()
+  print(paste("Starting to parse",matFileCode))
+  if (T){
+    # get the transition frames for the mat file
+    # parseImageForGreenFlashAndLSMandStimLogs.R uses **myFile** from the global environment
+    source(file.path(LSMCodeRConfig$srcdir,"parseImageForGreenFlashAndLSMandStimLogs.R"))
+    print("Passed parseImageForGreenFlash...")
+    print("Setting up the trial information")
+    animal[[basename(myFile)]] <- makeTrial(myFile)
+    stimulusParametersList[[matFileCode]] <- animal
+    saveRDS(stimulusParametersList,file=file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS"),compress = TRUE)
+    
+  }
+}
+
+for (myFile in sample(dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)[1:2],
+                      length(dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)[1:2]))) {
+  rdsFile <- file.path(LSMCodeRConfig$srcdir,"objects",basename(myFile))
+  lockFile <- sub(".mat",".lock",rdsFile)
+  matFileCode <- substring(basename(myFile),1,4)
+  if (file.exists(rdsFile) | file.exists(lockFile)) {
+    print(paste(myFile,"exists or is being worked on. Skipping"))
+  } else {
+    cat("some text here",file=lockFile)
+
+    print("Making ROI list")
+    matFileROIListByZ <- list()
+    for (tectumROIforZ in 1:nrow(tempDF <- tectumROIs[as.character(tectumROIs$matfile)==matFileCode,])) {
+      print(tectumROIforZ)
+      matFileROIListByZ[[paste("z",tempDF[tectumROIforZ,"z"],sep="_")]] = getROIs(roiEdgeLength = roiEdgeLength,
+                                                                                  x=tempDF[tectumROIforZ,"x"],
+                                                                                  y=tempDF[tectumROIforZ,"y"],
+                                                                                  w=tempDF[tectumROIforZ,"w"],
+                                                                                  h=tempDF[tectumROIforZ,"h"])
+    }
+    
+    statisticsList <- list()
+    
+    print("Extracting raw data and useful statistics")
+    
+    for (stimulation in names(animal[[matFileCode]])){ # for a matfile get the raw data as Z plane and ROI
+      # foreach(stimulation=names(currentStimulusParameters)) %dopar% {
+      cat(".")
+      print(animal[[matFileCode]][[stimulation]]$start)
+      rawDataForMatFileByROIs <- lapply( # outer lapply breaks down roiList by z-plane
+        matFileROIListByZ,
+        function(roiList)
+        {
+          lapply( # inner lapply gets the raw statistics for each ROI
+            roiList,
+            getROIsRawDataFromHDF5.lapply,
+            hdf5Image.mat = imageDataSlice,
+            frame.start = animal[[basename(myFile)]][[stimulation]]$start, # 750,
+            frame.end = animal[[basename(myFile)]][[stimulation]]$end,
+            offset = 399
+          )
+        }
+        )
+
+      saveRDS(rawDataForMatFileByROIs,file=file.path(LSMCodeRConfig$srcdir,"objects",paste(stimulation,".RDS",sep="")),compress = T)
+      # statisticsList[[stimulation]]<- getUsefulStatisticsByROI(rawDataForMatFileByROIs,matFileROIListByZ,
+      #                                                          analysisWindow=c(150:750),backgroundWindow=c(0:100))
+      cat("+")
+      statisticsList[[stimulation]]<- lapply(rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
+                                             analysisWindow=c((900/length(rawDataForMatFileByROIs)):(1500/length(rawDataForMatFileByROIs))),
+                                             backgroundWindow=c((700/length(rawDataForMatFileByROIs)):(900/length(rawDataForMatFileByROIs))))
+
+      attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=animal[[basename(myFile)]][[stimulation]]$start,
+                                                              frame.end = animal[[basename(myFile)]][[stimulation]]$end)
+      attr(statisticsList[[stimulation]],"StimulusBlock") <- c(stimulus=animal[[basename(myFile)]][[stimulation]]$stimulus,
+                                                               block=animal[[basename(myFile)]][[stimulation]]$block)
+      attr(statisticsList[[stimulation]],"matFile") <- myFile
+
+    }
+    matList[[substr(stimulation,1,4)]] <- statisticsList
+    saveRDS(matList,file=matListRDS,compress = TRUE)
+    unlink(lockFile)
+    # clean up
+    file.h5$close()
+    imageDataSlice$close()
+    
+  } 
+  
+  # stimulusParametersList[[matFileCode]] <- animal
+  # saveRDS(stimulusParametersList,file=stimParListRDS,compress = TRUE)
+}

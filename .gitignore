@@ -6,3 +6,6 @@
 # Nonsense from my laptop
 # stuff/*
 .Rproj.user
+
+# lock files
+*.lock
