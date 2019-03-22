@@ -91,16 +91,17 @@ for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
         },
         matFileROIListByZ,sub("z_","",names(matFileROIListByZ))
       )
-      
+      print("finished extracted raw data...")
       saveRDS(rawDataForMatFileByROIs,
               file=file.path(LSMCodeRConfig$srcdir,"objects",paste(stimulation,".RDS",sep="")),
               compress = T)
       # statisticsList[[stimulation]]<- getUsefulStatisticsByROI(rawDataForMatFileByROIs,matFileROIListByZ,
       #                                                          analysisWindow=c(150:750),backgroundWindow=c(0:100))
+      z_planes=attr(currentStimulusParameters,"imageDimensions")[['z']]
       statisticsList[[stimulation]]<- lapply(
                                         rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
-                                        analysisWindow=c((900/length(rawDataForMatFileByROIs)):(1500/length(rawDataForMatFileByROIs))),
-                                        backgroundWindow=c((700/length(rawDataForMatFileByROIs)):(900/length(rawDataForMatFileByROIs)))
+                                        analysisWindow=c((900/z_planes):(1500/z_planes)),
+                                        backgroundWindow=c((700/z_planes):(900/z_planes))
                                       )
       
       attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=currentStimulusParameters[[stimulation]]$start,
