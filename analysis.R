@@ -1,29 +1,41 @@
 objDir <- "C:/Users/Aaron/Documents/R/LSMCodeR/objects/"
-matList <- readRDS(file.path(objDir,"matList1.RDS"))
-stimParList <- readRDS(file.path(objDir,'stimParList.RDS'))
-# myFile <- readRDS("AAAB-20190211-SabineSimple-laser_3-SP.mat.1.1.RDS")
+
+completedMats <- dir(file.path(LSMCodeRConfig$srcdir,"objects"),patt=".mat",full=T)
+completeMats.apply <- sapply(completedMats,"[[")
+
+completedMats.list <- list()
+for (mats in completedMats) {
+  # print(substr(basename(mats),1,4))
+  # print(names(readRDS(mats)))
+  completedMats.list[[substr(basename(mats),1,4)]] <- readRDS(mats)
+}
+
 fishGenos <- read.csv(file.path(LSMCodeRConfig$srcdir,"models","DSLM-fish.csv"))
 fishFullGeno <- c()
-for (i in unique(substr(names(matList),1,3))){
+for (i in unique(substr(names(completedMats.list),1,3))){
   fishFullGeno <- c(fishFullGeno,as.character(unique(fishGenos[fishGenos$Fish==i,"Full_geno"])))
 }
-names(fishFullGeno) <- unique(substr(names(matList),1,3))
+names(fishFullGeno) <- unique(substr(names(completedMats.list),1,3))
 
 
 
 analysisDF <- c()
-for (k in 1:length(matList)){
+for (k in 1:length(completedMats.list)){
   analysisDF.animals <- c()
-  animal <- names(matList[k])
+  animal <- names(completedMats.list[k])
   print(paste("animal:",animal))
-  for (j in 1: length(matList[[k]])){
+  for (j in 1: length(completedMats.list[[k]][[1]])){
     analysisDF.stimulus <- c()
-    stimulus <- substr(names(matList[[k]][j]),nchar(names(matList[[k]][j]))-2,nchar(names(matList[[k]][j])))
+    stimulus <- substr(names(completedMats.list[[k]][[1]][j]),
+                       nchar(names(completedMats.list[[k]][[1]][j]))-2,
+                       nchar(names(completedMats.list[[k]][[1]][j])))
     # print(paste("stimulus:",stimulus))
-    for (i in 1:length(matList[[k]][[j]])) {
+    for (i in 1:length(completedMats.list[[k]][[1]][[j]])) {
       analysisDF.zplane <- c()
-      z_plane <- names(matList[[k]][[j]][i])
-      analysisDF.zplane <- matList[[k]][[j]][[i]][,c("snr.mean","background.mean","dff.mean","snr.max","dff.max")]
+      z_plane <- names(completedMats.list[[k]][[1]][[j]][i])
+      print(paste("z_plane:",z_plane))
+      analysisDF.zplane <- 
+        completedMats.list[[k]][[1]][[j]][[i]][,c("snr.mean","background.mean","dff.mean","snr.max","dff.max")]
       analysisDF.zplane$z_plane <- as.factor(z_plane)
       analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
     }

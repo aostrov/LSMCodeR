@@ -1,127 +1,134 @@
-tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
-anatomyFiles <- dir(imageDir,patt="^[A-Z]{3}-")
-physiologyFilesSP <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
-multiplaneFiles <- setdiff(
-  dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE),
-  physiologyFilesSP
-  )
-# matFile <- "/Volumes/home/hdf5/20181204-gcamp7F-7d-SabineBars-1planeSP.mat"
-# matFile <- file.path(imageDir,"AAFA-gen-A-laser3-SabineSimple","AAFA-gen-A-laser3-SabineSimple.mat")
-# file.h5 <- H5File$new(file.path(matFile), mode = "r")
-# imageDataSlice<-file.h5[["imagedata"]]
+if (!exists("tectumROIs")) tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
+# anatomyFiles <- dir(imageDir,patt="^[A-Z]{3}-")
+# physiologyFilesSP <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
+# multiplaneFiles <- setdiff(
+#   dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE),
+#   physiologyFilesSP
+#   )
+
 pixelSize=0.8
 roiEdgeLength <- 26
-matListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","matList1.RDS")
-stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParList.RDS")
+
+stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS")
 
 cleanLSMAnalysis <- function(){
   rm(matList)
   rm(stimulusParametersList)
 }
 
-if (file.exists(matListRDS) & exists("matList")) {
-  print("matList exists and is already loaded. ")
-  print("Using the current matList.")
-  print("")
-} else if (file.exists(matListRDS) & !exists("matList")){
-  print("Loading matList from disk.")
-  matList <- readRDS(file=matListRDS)
-} else {
-  print("There is no matList on disk or in memory.")
-  print("Starting matList from scratch.")
-  print("Go get a coffee, this will take a while.")
-  matList <- list()
-}
-
 if (file.exists(stimParListRDS) & exists("stimulusParametersList")) {
   print("stimulusParametersList exists and is already loaded. ")
-  print("Using the current stimulusParametersList")
-  print("")
+  onDiskParameters <- readRDS(stimParListRDS)
+  newParams <- setdiff(names(onDiskParameters),names(stimulusParametersList))
+  if (length(newParams) > 0) {
+    stimulusParametersList = onDiskParameters
+    print("Using the on disk stimulusParametersList")
+  } else {
+    print("Using the in memory stimulusParametersList")
+  }
 } else if (file.exists(stimParListRDS) & !exists("stimulusParametersList")){
-  print("Loading stimulusParametersList from disk.")
+  print("There is no parameter list in memory. Loading stimulusParametersList from disk.")
   stimulusParametersList <- readRDS(file=stimParListRDS)
 } else {
   print("There is no stimulusParametersList on disk or in memory.")
   print("Starting stimulusParametersList from scratch.")
-  stimulusParametersList <- list()
+  source(file.path(LSMCodeRConfig$srcdir,"createStimParamterList.R"))
 }
 
 
 
-# set up file handling
-for (myFile in dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)) {
-  # foreach(myFile=physiologyFilesSP, .packages = "hdf5r") %dopar% {
+######################################
+##### more parallel, less clever #####
+######################################
+
+
+# for (myFile in sample(dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)[1:2],
+#                       length(dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)[1:2]))) {
+
+myFiles <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)
+
+
+for (myFile in myFiles) {
+  rdsFile <- file.path(LSMCodeRConfig$srcdir,"objects",basename(myFile))
+  lockFile <- sub(".mat",".lock",rdsFile)
   matFileCode <- substring(basename(myFile),1,4)
-  animal <- list()
-  print(paste("Starting to parse",matFileCode))
-  if (is.null(matList[[matFileCode]])){
-    # get the transition frames for the mat file
-    source(file.path(LSMCodeRConfig$srcdir,"parseImageForGreenFlashAndLSMandStimLogs.R"))
-    print("Passed parseImageForGreenFlash...")
-    currentStimulusParameters <- makeTrial(myFile)
-    # set up ROIs
+  if (file.exists(rdsFile) | file.exists(lockFile)) {
+    print(paste(myFile,"exists or is being worked on. Skipping"))
+  } else {
+    print(paste("Processing:",myFile))
+    cat("some text here",file=lockFile)
     
-    print("setting up ROIs")
+    print("Making ROI list")
     matFileROIListByZ <- list()
     for (tectumROIforZ in 1:nrow(tempDF <- tectumROIs[as.character(tectumROIs$matfile)==matFileCode,])) {
       print(tectumROIforZ)
       matFileROIListByZ[[paste("z",tempDF[tectumROIforZ,"z"],sep="_")]] = getROIs(roiEdgeLength = roiEdgeLength,
-              x=tempDF[tectumROIforZ,"x"],
-              y=tempDF[tectumROIforZ,"y"],
-              w=tempDF[tectumROIforZ,"w"],
-              h=tempDF[tectumROIforZ,"h"])
+                                                                                  x=tempDF[tectumROIforZ,"x"],
+                                                                                  y=tempDF[tectumROIforZ,"y"],
+                                                                                  w=tempDF[tectumROIforZ,"w"],
+                                                                                  h=tempDF[tectumROIforZ,"h"])
     }
-    print("finished setting up ROIs")
-    animal[[basename(myFile)]] <- currentStimulusParameters
+    
     statisticsList <- list()
-    for (stimulation in names(currentStimulusParameters)){ # for a matfile get the raw data as Z plane and ROI
+    
+    print("Extracting raw data and useful statistics")
+    
+    # open the connection to the .mat file
+    file.h5 <- H5File$new(myFile, mode = "r")
+    # save a new variable that contains the image data
+    # this step can be avoided, and might improve performance on very large datasets
+    imageDataSlice<-file.h5[["imagedata"]]
+    file.h5$close()
+
+    # data is in the form:
+    # [stacks,(channels),slices,rows, columns]
+    imageDataSlice.dims <- imageDataSlice$dims
+    names(imageDataSlice.dims) <- c('t','c','z','y','x')
+    print(imageDataSlice.dims)
+    
+    for (stimulation in names(stimulusParametersList[[matFileCode]])){ # for a matfile get the raw data as Z plane and ROI
       # foreach(stimulation=names(currentStimulusParameters)) %dopar% {
-      print(currentStimulusParameters[[stimulation]]$start)
+      cat(".",sep="\n")
+      print(stimulusParametersList[[matFileCode]][[stimulation]]$start)
       rawDataForMatFileByROIs <- mapply( # outer lapply breaks down roiList by z-plane
         function(roiList,z) 
         {
-        lapply( # inner lapply gets the raw statistics for each ROI
-          roiList,
-          getROIsRawDataFromHDF5.lapply,
-          hdf5Image.mat = imageDataSlice,
-          frame.start = currentStimulusParameters[[stimulation]]$start, # 750,
-          frame.end = currentStimulusParameters[[stimulation]]$end,
-          offset = 399
+          lapply( # inner lapply gets the raw statistics for each ROI
+            roiList,
+            getROIsRawDataFromHDF5.lapply,
+            z,
+            hdf5Image.mat = imageDataSlice,
+            frame.start = stimulusParametersList[[matFileCode]][[stimulation]]$start, # 750,
+            frame.end = stimulusParametersList[[matFileCode]][[stimulation]]$end,
+            offset = 399
           )
         },
-        matFileROIListByZ,sub("z_","",names(matFileROIListByZ))
+        roiList=matFileROIListByZ,z=as.integer(sub("z_","",names(matFileROIListByZ))),SIMPLIFY = F
       )
-      print("finished extracted raw data...")
-      saveRDS(rawDataForMatFileByROIs,
-              file=file.path(LSMCodeRConfig$srcdir,"objects",paste(stimulation,".RDS",sep="")),
-              compress = T)
-      # statisticsList[[stimulation]]<- getUsefulStatisticsByROI(rawDataForMatFileByROIs,matFileROIListByZ,
-      #                                                          analysisWindow=c(150:750),backgroundWindow=c(0:100))
-      z_planes=attr(currentStimulusParameters,"imageDimensions")[['z']]
+
+      z_planes=attr(stimulusParametersList[[matFileCode]],"imageDimensions")[['z']]
       statisticsList[[stimulation]]<- lapply(
-                                        rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
-                                        analysisWindow=c((900/z_planes):(1500/z_planes)),
-                                        backgroundWindow=c((700/z_planes):(900/z_planes))
-                                      )
+        rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
+        analysisWindow=c((900/z_planes):(1500/z_planes)),
+        backgroundWindow=c((700/z_planes):(900/z_planes))
+      )
       
-      attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=currentStimulusParameters[[stimulation]]$start,
-                                                              frame.end = currentStimulusParameters[[stimulation]]$end)
-      attr(statisticsList[[stimulation]],"StimulusBlock") <- c(stimulus=currentStimulusParameters[[stimulation]]$stimulus,
-                                                               block=currentStimulusParameters[[stimulation]]$block)
+      attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=stimulusParametersList[[matFileCode]][[stimulation]]$start,
+                                                              frame.end = stimulusParametersList[[matFileCode]][[stimulation]]$end)
+      attr(statisticsList[[stimulation]],"StimulusBlock") <- c(stimulus=stimulusParametersList[[matFileCode]][[stimulation]]$stimulus,
+                                                               block=stimulusParametersList[[matFileCode]][[stimulation]]$block)
       attr(statisticsList[[stimulation]],"matFile") <- myFile
       
     }
+    matList <- list()
+
     matList[[substr(stimulation,1,4)]] <- statisticsList
-    saveRDS(matList,file=matListRDS,compress = TRUE)
+    saveRDS(matList,file=rdsFile,compress = TRUE)
+    unlink(lockFile)
+
     # clean up
     file.h5$close()
     imageDataSlice$close()
-  } else {
-    print(paste(matFileCode, "already exists in matList, skipping"))
-  }
-  stimulusParametersList[[matFileCode]] <- animal
-  saveRDS(stimulusParametersList,file=stimParListRDS,compress = TRUE)
-  count
+    
+  } 
 }
-
-saveRDS(matList,file=matListRDS,compress = TRUE)

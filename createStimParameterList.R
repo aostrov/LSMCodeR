@@ -4,24 +4,11 @@ if (!exists("LSMCodeRConfig")) stop("Please start up the project...")
 # stimParListForParallel on disk and/or in memory. If there are any missing
 # go ahead and load those.
 stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS")
-if (file.exists(stimParListRDS) & exists("stimulusParametersList")) {
-  print("stimulusParametersList exists and is already loaded. ")
-  print("Using the current stimulusParametersList")
-  print("")
-} else if (file.exists(stimParListRDS) & !exists("stimulusParametersList")){
-  print("Loading stimulusParametersList from disk.")
-  stimulusParametersList <- readRDS(file=stimParListRDS)
-} else {
-  print("There is no stimulusParametersList on disk or in memory.")
-  print("Starting stimulusParametersList from scratch.")
-  stimulusParametersList <- list()
-}
 
 tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
-myFiles <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)[1:2]
+myFiles <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)
 
 
-animal <- list()
 for (myFile in myFiles) {
   # foreach(myFile=physiologyFilesSP, .packages = "hdf5r") %dopar% {
   matFileCode <- substring(basename(myFile),1,4)
@@ -32,8 +19,8 @@ for (myFile in myFiles) {
     source(file.path(LSMCodeRConfig$srcdir,"parseImageForGreenFlashAndLSMandStimLogs.R"))
     print("Passed parseImageForGreenFlash...")
     print("Setting up the trial information")
-    animal[[basename(myFile)]] <- makeTrial(myFile)
-    stimulusParametersList[[matFileCode]] <- animal
+    # animal[[basename(myFile)]] <- makeTrial(myFile)
+    stimulusParametersList[[matFileCode]] <- makeTrial(myFile)
     saveRDS(stimulusParametersList,file=file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS"),compress = TRUE)
     file.h5$close()
     imageDataSlice$close()

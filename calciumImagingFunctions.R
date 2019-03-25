@@ -275,7 +275,7 @@ getROIsRawDataFromHDF5.lapply <- function(roiListElement,z=1,hdf5Image.mat,frame
   # or whatever ends up replacing it
   tempImage <- hdf5Image.mat[c(frame.start:frame.end),,z,tempY,tempX]
   tempImage <- aperm(tempImage,c(3,2,1)) - offset
-  # print(dim(tempImage))
+  print(paste("z:",z))
   imageAttributes <- c(frame.start,frame.end,offset)
   names(imageAttributes) <- c("frame.start","frame.end","pixel_offset")
   attr(tempImage, "imageAttributes") <- imageAttributes
