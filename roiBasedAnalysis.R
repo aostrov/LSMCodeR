@@ -105,8 +105,26 @@ for (myFile in myFiles) {
         },
         roiList=matFileROIListByZ,z=as.integer(sub("z_","",names(matFileROIListByZ))),SIMPLIFY = F
       )
-
       z_planes=attr(stimulusParametersList[[matFileCode]],"imageDimensions")[['z']]
+      # save the relevant data from each ROI.
+      # full data still exists as .mat files
+      # but it might be nice to have the background
+      # and signal areas saved externally
+      test <- lapply(rawDataForMatFileByROIs, function(x) {
+        lapply(x,
+               function(y) {
+                 background <- apply(y[,,c((700/z_planes):(900/z_planes))],3,mean)
+                 attr(background,"start") <- 700/z_planes
+                 attr(background,"end") <- 900/z_planes
+                 signal <- apply(y[,,c((900/z_planes):(1500/z_planes))],3,mean)
+                 attr(signal,"start") <- 900/z_planes
+                 attr(signal,"end") <- 1500/z_planes
+                 return(list(background=background,signal=signal))
+               })
+      })
+      saveRDS(test,file=file.path(LSMCodeRConfig$srcdir,"toDiscardEventually",paste(stimulation,".RDS",sep="")))
+      
+      
       statisticsList[[stimulation]]<- lapply(
         rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
         analysisWindow=c((900/z_planes):(1500/z_planes)),

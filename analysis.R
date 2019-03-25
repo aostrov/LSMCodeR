@@ -1,7 +1,6 @@
 objDir <- "C:/Users/Aaron/Documents/R/LSMCodeR/objects/"
 
 completedMats <- dir(file.path(LSMCodeRConfig$srcdir,"objects"),patt=".mat",full=T)
-completeMats.apply <- sapply(completedMats,"[[")
 
 completedMats.list <- list()
 for (mats in completedMats) {
@@ -55,14 +54,16 @@ analysisDF$geno <- as.factor(analysisDF$geno)
 # analysisDF.block <- analysisDF[substr(analysisDF$stimulus,1,1)==1,]
 # analysisDF.stimulus <- analysisDF[substr(analysisDF$stimulus,3,3)==3,]
 ggplot(subset(analysisDF,
-              background.mean>20 &
-                background.mean<400 &
+              background.mean>50 &
+                background.mean<400 & 
+                dff.max > 0.5 &
                 snr.mean > 3),
        aes(background.mean,dff.max)) + 
   geom_jitter(aes(color=animal,size=snr.mean),alpha=0.3) + 
-  facet_wrap(~geno, ncol=4)
+  facet_wrap(~geno, ncol=4) + 
+  ylim(c(-1,8)) + xlim(c(-10,320))
 
 ggplot(subset(analysisDF,
               background.mean>20),
-       aes(geno,snr.mean)) + 
+       aes(geno,snr.max)) + 
   geom_boxplot(notch = T)
