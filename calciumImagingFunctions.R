@@ -252,6 +252,7 @@ getROIs <- function(numSubunits=NULL,roiEdgeLength=NULL,
       xRange <- c(
         (x+(xx* ifelse(is.null(numSubunits),roiEdgeLength,w/divisor) )):
           (x+((xx+1)* ifelse(is.null(numSubunits),roiEdgeLength,w/divisor) )))
+      if (xRange[1]==0) xRange=xRange+1 # this is a bit of a fudge that I hope works for now...
       yRange <- c(
         (y+(yy* ifelse(is.null(numSubunits),roiEdgeLength,h/divisor) )):
           (y+((yy+1) * ifelse(is.null(numSubunits),roiEdgeLength,h/divisor) ))
