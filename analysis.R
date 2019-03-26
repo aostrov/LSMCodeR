@@ -32,7 +32,8 @@ for (k in 1:length(completedMats.list)){
     for (i in 1:length(completedMats.list[[k]][[1]][[j]])) {
       analysisDF.zplane <- c()
       z_plane <- names(completedMats.list[[k]][[1]][[j]][i])
-      print(paste("z_plane:",z_plane))
+      # print(paste("z_plane:",z_plane))
+      cat(".")
       analysisDF.zplane <- 
         completedMats.list[[k]][[1]][[j]][[i]][,c("snr.mean","background.mean","dff.mean","snr.max","dff.max")]
       analysisDF.zplane$z_plane <- as.factor(z_plane)
@@ -60,7 +61,7 @@ ggplot(subset(analysisDF,
                 snr.mean > 3),
        aes(background.mean,dff.max)) + 
   geom_jitter(aes(color=animal,size=snr.mean),alpha=0.3) + 
-  facet_wrap(~geno, ncol=4) + 
+  facet_wrap(~geno, ncol=3) + 
   ylim(c(-1,8)) + xlim(c(-10,320))
 
 ggplot(subset(analysisDF,
