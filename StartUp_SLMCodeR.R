@@ -11,6 +11,7 @@ require('squash')
 require('digest')
 require(doParallel)
 require(doSNOW)
+require("viridis")
 
 LSMCodeRConfig<-list()
 LSMCodeRConfig$srcdir<-normalizePath(dirname(attr(body(function() {}),'srcfile')$filename))

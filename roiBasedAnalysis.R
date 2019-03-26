@@ -105,6 +105,7 @@ for (myFile in myFiles) {
         },
         roiList=matFileROIListByZ,z=as.integer(sub("z_","",names(matFileROIListByZ))),SIMPLIFY = F
       )
+      
       z_planes=attr(stimulusParametersList[[matFileCode]],"imageDimensions")[['z']]
       # save the relevant data from each ROI.
       # full data still exists as .mat files
