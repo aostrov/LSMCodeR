@@ -1,5 +1,3 @@
-objDir <- "C:/Users/Aaron/Documents/R/LSMCodeR/objects/"
-
 completedMats <- dir(file.path(LSMCodeRConfig$srcdir,"objects"),patt=".mat",full=T)
 
 completedMats.list <- list()
@@ -22,6 +20,7 @@ analysisDF <- c()
 for (k in 1:length(completedMats.list)){
   analysisDF.animals <- c()
   animal <- names(completedMats.list[k])
+  cat("",sep="\n")
   print(paste("animal:",animal))
   for (j in 1: length(completedMats.list[[k]][[1]])){
     analysisDF.stimulus <- c()
