@@ -13,6 +13,21 @@ require(doParallel)
 require(doSNOW)
 require("viridis")
 
+packages <- c("viridis"=require("viridis"),"doSNOW"=require(doSNOW))
+
+for (package in 1:length(packages)) {
+  if (!packages[package]) {
+    prompt <- readline(prompt=paste("Load required package",names(packages[package]) ,"? [y/n]: "))
+    switch (prompt,
+      "y" = install.packages(names(packages[package])),
+      "Y" = print("WHOOPIE"),
+      "n" = print("Things will fail"),
+      "N" = print("Capital things will fail"),
+      print("choose y or n...")
+    )
+  }
+}
+
 LSMCodeRConfig<-list()
 LSMCodeRConfig$srcdir<-normalizePath(dirname(attr(body(function() {}),'srcfile')$filename))
 LSMCodeRConfig$maindir<-dirname(LSMCodeRConfig$srcdir)

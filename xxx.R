@@ -157,3 +157,81 @@ for (plane in 1:20) {
     )
 }
 
+# time series stuff
+aaia <- readRDS("/Users/aostrov/projects/R/OrgerLab/LSMCodeR/toDiscardEventually/AAIA-gen_A_laser-3_SabineSimple.mat.1.1.RDS")
+
+make_norm_dist <- function(x, mean, sd){
+  norm = c()
+  for (i in seq(x)) {
+    norm = c(norm, 1.0/(sd * sqrt(2*pi)) * exp(-(i - mean)^2/(2*sd^2)) )
+  }
+  return(norm)
+}
+test=make_norm_dist(1000,500,100)
+x=sort(sample(length(test),200))
+y=test[x]
+fit4 <- lm(y~poly(x,4,raw=TRUE))
+
+hm=test[which.max(test)]/2
+
+xmax=which.max(test[200:800])
+testdf=data.frame(y=test[200:800],x=seq(length(test[200:800])))
+x1 <- testdf$x[testdf$x < xmax][which.min(abs(testdf$y[testdf$x < xmax]-max(testdf$y)/2))]
+x2 <- testdf$x[testdf$x > xmax][which.min(abs(testdf$y[testdf$x > xmax]-max(testdf$y)/2))]
+
+points(c(x1, x2), c(testdf$y[testdf$x==x1], testdf$y[testdf$x==x2]), col="red")
+
+rois <- aaia[["z_5"]]
+getTopROIperZ <- function(rawSubsettedDataByROI) {
+  # rois <- aaia[["z_5"]]
+  rois.sort <- sort(sapply(rawSubsettedDataByROI, function(x) max(x$signal)))
+  rois.sort.max <- which.max(rois.sort)
+  roi.sort.max.background <- mean(rawSubsettedDataByROI[[names(rois.sort.max)]]$background)
+  roi.sort.max.dff <- (rawSubsettedDataByROI[[names(rois.sort.max)]]$signal -
+                         roi.sort.max.background) / 
+                          roi.sort.max.background
+  # roi.sort.max.dff.xmax <- which.max(roi.sort.max.dff)
+  return(roi.sort.max.dff)
+}
+
+getArbitraryTopROIsPerZ <- function(rawSubsettedDataByROI,percentage) {
+  rois.sort <- sort(sapply(rawSubsettedDataByROI, function(x) max(x$signal)))
+  rois.sort.max <- rois.sort[(round(length(rois.sort)*percentage)):length(rois.sort)]
+  roi.sort.max.background <- lapply(names(rois.sort.max), function(x) mean(rawSubsettedDataByROI[[x]]$background))
+  names(roi.sort.max.background) <- names(rois.sort.max)
+  # print(rawSubsettedDataByROI[names(roi.sort.max.background)])
+  
+  dff=mapply(function(background,rawSignal) {
+    signal=rawSignal$signal
+    # print(background)
+    # print(background)
+    return( (signal - background)/background )
+  },
+          background=roi.sort.max.background,
+          rawSignal=rawSubsettedDataByROI[names(roi.sort.max.background)],
+          SIMPLIFY = F)
+  names(dff) <- names(rois.sort.max)
+  return(dff)
+}
+
+rois.sort <- sort(sapply(rois, function(x) max(x$signal)))
+rois.sort.max <- which.max(rois.sort)
+roi.sort.max.background <- mean(rois[[names(rois.sort.max)]]$background)
+roi.sort.max.dff <- (rois[[names(rois.sort.max)]]$signal-roi.sort.max.background)/roi.sort.max.background
+roi.sort.max.dff.xmax <- which.max(roi.sort.max.dff)
+fit4=lm(roi.sort.max.dff[1:roi.sort.max.dff.max] ~ poly(1:length(roi.sort.max.dff[1:roi.sort.max.dff.max]),4,raw=TRUE))
+
+fourth_order <- function(newdist, model) {
+  coefs <- coef(model)
+  #y = d + cx + bx^2 + ax^3
+  res <- coefs[1] + (coefs[2] * newdist) + (coefs[3] * newdist^2) + (coefs[4] * newdist^3) + (coefs[4] * newdist^4)
+  return(res)
+}
+
+# try to figure out where the start of the rise occurs
+zzz=lapply(aaia,getTopROIperZ)
+zzz.max <- sapply(zzz,which.max)
+zzz.hist=hist(sapply(zzz,function(x) which.max(diff(x))),breaks = length(zzz))
+timeRiseStarts <- zzz.hist$breaks[which.max(zzz.hist$counts)]
+
+# maybe I want to try to compare each of the plots to a model???
