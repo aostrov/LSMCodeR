@@ -9,3 +9,5 @@
 
 # lock files
 *.lock
+
+images/*

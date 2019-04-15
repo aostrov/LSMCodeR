@@ -57,14 +57,19 @@ analysisDF$geno <- as.factor(analysisDF$geno)
 ggplot(subset(analysisDF,
               background.mean>50 &
                 background.mean<400 & 
-                dff.max > 0.5 &
+                dff.max > 0.75 &
                 snr.mean > 3),
        aes(background.mean,dff.max)) + 
   geom_jitter(aes(color=animal,size=snr.mean),alpha=0.3) + 
   facet_wrap(~geno, ncol=3) + 
-  ylim(c(-1,8)) + xlim(c(-10,320))
+  ylim(c(-1,8)) + xlim(c(-10,320)) + scale_color_viridis_d()
 
 ggplot(subset(analysisDF,
-              background.mean>20),
+              background.mean>50 &
+                background.mean<400 & 
+                dff.max > 0.75 &
+                snr.mean > 3,animal!="AAMA"),
        aes(geno,snr.max)) + 
   geom_boxplot(notch = T)
+
+ggplot(analysisDF) + geom_histogram(aes(geno),stat="count")
