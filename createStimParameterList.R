@@ -21,6 +21,7 @@ for (myFile in myFiles) {
     print("Setting up the trial information")
     # animal[[basename(myFile)]] <- makeTrial(myFile)
     stimulusParametersList[[matFileCode]] <- makeTrial(myFile)
+    # saving the list inside the loop doesn't make a whole lot of sense...
     saveRDS(stimulusParametersList,file=file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS"),compress = TRUE)
     file.h5$close()
     imageDataSlice$close()
