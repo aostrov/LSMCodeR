@@ -158,7 +158,7 @@ for (plane in 1:20) {
 }
 
 # time series stuff
-aaia <- readRDS("/Users/aostrov/projects/R/OrgerLab/LSMCodeR/toDiscardEventually/AAIA-gen_A_laser-3_SabineSimple.mat.1.1.RDS")
+aaia <- readRDS(file.path(LSMCodeRConfig$srcdir,"toDiscardEventually/AAIA-gen_A_laser-3_SabineSimple.mat.1.1.RDS"))
 
 make_norm_dist <- function(x, mean, sd){
   norm = c()
@@ -194,23 +194,45 @@ getTopROIperZ <- function(rawSubsettedDataByROI) {
   return(roi.sort.max.dff)
 }
 
-getArbitraryTopROIsPerZ <- function(rawSubsettedDataByROI,percentage) {
-  rois.sort <- sort(sapply(rawSubsettedDataByROI, function(x) max(x$signal)))
-  rois.sort.max <- rois.sort[(round(length(rois.sort)*percentage)):length(rois.sort)]
-  roi.sort.max.background <- lapply(names(rois.sort.max), function(x) mean(rawSubsettedDataByROI[[x]]$background))
-  names(roi.sort.max.background) <- names(rois.sort.max)
-  # print(rawSubsettedDataByROI[names(roi.sort.max.background)])
+getArbitraryTopROIsPerZ <- function(rawSubsettedDataByROI,percentage=0.9,threshold=0) {
+  rois <- sapply(rawSubsettedDataByROI, function(x) {
+    sapply(x, function(y) {
+      max(y$signal)
+    })
+  })
+  rois.sort <- lapply(rois,sort)
+  rois.sort.max <- lapply(rois.sort,function(roi.sort) {
+    roi.sort[(round(length(roi.sort)*percentage)):length(roi.sort)]
+  })
+
+  rois <- sapply(rawSubsettedDataByROI, function(x) {
+    sapply(x, function(y) {
+      mean(y$background)
+    })
+  })
   
-  dff=mapply(function(background,rawSignal) {
-    signal=rawSignal$signal
-    # print(background)
-    # print(background)
-    return( (signal - background)/background )
+  rois.background.sort <- mapply(function(x,y) {
+    x[names(y)]
+  },x=rois,y=rois.sort.max)
+
+  dff <- mapply(function(background,rawSignal,threshold) {
+    signal=rawSignal
+
+    dff.temp=(signal - background)/background
+    if (threshold==0) {
+      return(dff.temp)
+    } else {
+      if (!any(dff.temp > threshold)) {
+        return (NULL)
+      }
+    }
+    return(dff.temp)
   },
-          background=roi.sort.max.background,
-          rawSignal=rawSubsettedDataByROI[names(roi.sort.max.background)],
+          background=rois.background.sort,
+          rawSignal=rois.sort.max,
+          threshold=threshold,
           SIMPLIFY = F)
-  names(dff) <- names(rois.sort.max)
+  
   return(dff)
 }
 
@@ -229,8 +251,8 @@ fourth_order <- function(newdist, model) {
 }
 
 # try to figure out where the start of the rise occurs
-zzz=lapply(aaia,getTopROIperZ)
-zzz.max <- sapply(zzz,which.max)
+zzz=lapply(aaia,getArbitraryTopROIsPerZ)
+zzz.max <- lapply(zzz,function(x) lapply(x,which.max))
 zzz.hist=hist(sapply(zzz,function(x) which.max(diff(x))),breaks = length(zzz))
 timeRiseStarts <- zzz.hist$breaks[which.max(zzz.hist$counts)]
 
