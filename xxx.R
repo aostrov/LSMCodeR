@@ -194,7 +194,7 @@ getTopROIperZ <- function(rawSubsettedDataByROI) {
   return(roi.sort.max.dff)
 }
 
-getArbitraryTopROIsPerZ <- function(rawSubsettedDataByROI,percentage=0.9,threshold=0) {
+getArbitraryTopROIsPerZ <- function(rawSubsettedDataByROI,bottomPercentageToDiscard=0.9,threshold=0) {
   rois <- sapply(rawSubsettedDataByROI, function(x) {
     sapply(x, function(y) {
       max(y$signal)
@@ -202,7 +202,7 @@ getArbitraryTopROIsPerZ <- function(rawSubsettedDataByROI,percentage=0.9,thresho
   })
   rois.sort <- lapply(rois,sort)
   rois.sort.max <- lapply(rois.sort,function(roi.sort) {
-    roi.sort[(round(length(roi.sort)*percentage)):length(roi.sort)]
+    roi.sort[(round(length(roi.sort)*bottomPercentageToDiscard)):length(roi.sort)]
   })
 
   rois <- sapply(rawSubsettedDataByROI, function(x) {
