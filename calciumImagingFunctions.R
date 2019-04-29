@@ -137,17 +137,18 @@ processSingleStimulus.lapply <- function(myList,
   }
   
   myImage <- returnOffsetedImage(myImage,offsetValue=offsetValue, setFloor = setFloor, ...)
-  
+  print(dim(myImage))
   if (outputType == 'dff'){
     myImage <- makeDFF(
       myImage,
       xyzDimOrder = c(1,2,3),
-      backgroundSlices=c(0:length(myList$backgroundSlices))
+      #backgroundSlices=c(myList$backgroundSlices)
+      backgroundSlices=c(0:( length(myList$backgroundSlices)/downSampleInTime) )
     )
     
   } else if (outputType=="snr") {
     myImage <- makeSNRByPixel(myImage,
-                              backgroundSlices=c(0:length(myList$backgroundSlices))
+                              backgroundSlices=c(0:(length(myList$backgroundSlices)/downSampleInTime))
     )
   }
   
