@@ -13,7 +13,7 @@ for (myFile in myFiles) {
   # foreach(myFile=physiologyFilesSP, .packages = "hdf5r") %dopar% {
   matFileCode <- substring(basename(myFile),1,4)
   print(paste("Starting to parse",matFileCode))
-  if (T){
+  if (!matFileCode%in%names(stimulusParametersList)){
     # get the transition frames for the mat file
     # parseImageForGreenFlashAndLSMandStimLogs.R uses **myFile** from the global environment
     source(file.path(LSMCodeRConfig$srcdir,"parseImageForGreenFlashAndLSMandStimLogs.R"))
@@ -26,5 +26,7 @@ for (myFile in myFiles) {
     file.h5$close()
     imageDataSlice$close()
     
+  } else {
+    print(paste(matFileCode,"already exists in stimulusParametersList. Skipping."))
   }
 }

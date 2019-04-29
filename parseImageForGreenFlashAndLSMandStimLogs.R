@@ -27,7 +27,7 @@ if (imageDataSlice.dims[['z']] > 1 ) {
   flashSD <- sd(imageDataSlice[1:100,,,1:200,1:200])
   
   slicesWithBigNumbers.begin <- c()
-  for (i in 1:20){
+  for (i in 1:imageDataSlice.dims[['z']]){
     if (mean(imageDataSlice[1:10,,i,1:200,1:200])>(flashMean+2*flashSD)){
       slicesWithBigNumbers.begin <- c(slicesWithBigNumbers.begin,i)
     }

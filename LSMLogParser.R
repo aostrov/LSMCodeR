@@ -19,12 +19,14 @@ endOfStimulations.frame <- (startOfStimulations + 1) # 12 # dummy variable that 
 if (nrow(stimdf[stimdf$shader=='green',])==4) {
   # proceed as normal
   someDodgyFix <- stimdf[stimdf$shader=='green',][2,'seconds']
-} else {
-  if (diff(round(stimdf[stimdf$shader=='green',"seconds"]))[1] > diff(round(stimdf[stimdf$shader=='green',"seconds"]))[2]) {
+} else if (nrow(stimdf[stimdf$shader=='green',])==3) {
+  if ( diff(round(stimdf[stimdf$shader=='green',"seconds"]))[1] > diff(round(stimdf[stimdf$shader=='green',"seconds"]))[2] ) {
     someDodgyFix <- stimdf[stimdf$shader=='green',"seconds"][1]
   } else {
     someDodgyFix <- stimdf[stimdf$shader=='green',"seconds"][2]
   }
+} else {
+  someDodgyFix <- stimdf[stimdf$shader=='green',"seconds"][2]
 }
 
 
