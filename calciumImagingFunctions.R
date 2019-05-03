@@ -27,87 +27,6 @@ readLogFileMetaData<-function(logFile){
   return(framedata)
 }
 
-# for a particular raw subsetted mat file, get a list of
-# the top ROIs that are optionally above a certain threshold
-# 
-# rawSubsettedDataByROI: a list of the raw values of background and stimulus
-#                        stimulations
-# bottomPertageToDiscard: defines which percentage of ROIs to drop
-# threshold: if a certain dF/F isn't reached, drop that ROI
-#
-# returns a list of equal length to the input list with the ROIs in the z planes
-# that fit the top X% and that are above a threshold. The elements of the list
-# are a named vector
-# -list
-#  - z_Y
-#   - c(ROI_Z1=...,ROI_Z2=...,etc)
-#
-# There is no reason that this can't also by lapplied over a larger list of lists
-getArbitraryTopROIsPerZ <- function(rawSubsettedDataByROI,
-                                      bottomPercentageToDiscard=0.9,
-                                      threshold=0
-                                    ) {
-  rois <- sapply(rawSubsettedDataByROI, function(x) {
-    sapply(x, function(y) {
-      max(y$signal)
-    })
-  })
-  rois.sort <- lapply(rois,sort)
-  rois.sort.max <- lapply(rois.sort,function(roi.sort) {
-    roi.sort[(round(length(roi.sort)*bottomPercentageToDiscard)):length(roi.sort)]
-  })
-  
-  rois <- sapply(rawSubsettedDataByROI, function(x) {
-    sapply(x, function(y) {
-      mean(y$background)
-    })
-  })
-  
-  rois.background.sort <- mapply(function(x,y) {
-    x[names(y)]
-  },x=rois,y=rois.sort.max)
-  
-  dff <- mapply(function(background,rawSignal,threshold) {
-    signal=rawSignal
-    
-    dff.temp=(signal - background)/background
-    if (threshold==0) {
-      return(dff.temp)
-    } else {
-      if (!any(dff.temp > threshold)) {
-        return (NULL)
-      }
-    }
-    return(dff.temp)
-  },
-  background=rois.background.sort,
-  rawSignal=rois.sort.max,
-  threshold=threshold,
-  SIMPLIFY = F)
-  
-  return(dff)
-}
-
-# A companion function to getArbitraryTopROIsPerZ()
-# It will transform the returned list to a data frame
-# At the moment it only works on an input list that has
-# a single stimulus
-# 
-# arbitraryTopRespondersByZ: a list as returned by a single call from
-# getArbitraryTopROIsPerZ()
-
-# returns a dataframe with two columns, roi and z
-# these can be used to subset analysisDF
-topRespondersDF <- function(arbitraryTopRespondersByZ) {
-  notNullZs <- arbitraryTopRespondersByZ[sapply(arbitraryTopRespondersByZ,function(z) !is.null(z))]
-  tempDF <- data.frame(roi=character(),z=character())
-  for (i in 1:length(notNullZs)) {
-    tempDF=rbind(tempDF,data.frame(roi=names(notNullZs[[i]]),z=names(notNullZs[i])))
-  }
-  return(tempDF)
-}
-
-
 # for presentationList2 it will return the index of which list 
 # element contains a particular stimulus and block pair
 # This is an incredibly stupid function at the moment
@@ -196,7 +115,6 @@ processSingleStimulus.lapply <- function(myList,
   outputType = match.arg(outputType)
   image.dims=image$dims
   names(image.dims) <- c('t','c','z','y','x')
-  print(myList$start)
 
   rangeOfImages <- seq(from=myList$start,
                        to=myList$end,

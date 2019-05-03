@@ -36,6 +36,7 @@ for (k in 1:length(completedMats.list)){
       analysisDF.zplane <- 
         completedMats.list[[k]][[1]][[j]][[i]][,c("snr.mean","background.mean","dff.mean","snr.max","dff.max")]
       analysisDF.zplane$z_plane <- as.factor(z_plane)
+      analysisDF.zplane$roi <- row.names(analysisDF.zplane)
       analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
     }
     analysisDF.stimulus$stimulus <- as.factor(stimulus)
@@ -50,6 +51,7 @@ for (fish in 1:length(fishFullGeno)) {
   analysisDF$geno[substr(analysisDF$animal,1,3)==names(fishFullGeno[fish])] <- fishFullGeno[fish]
 }
 analysisDF$geno <- as.factor(analysisDF$geno)
+saveRDS(analysisDF,file=file.path(LSMCodeRConfig$srcdir,"objects",paste("analysisDF",".RDS",sep="")))
 
 # analysisDF.block <- analysisDF[substr(analysisDF$stimulus,1,1)==1,]
 # analysisDF.stimulus <- analysisDF[substr(analysisDF$stimulus,3,3)==3,]
