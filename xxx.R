@@ -194,47 +194,7 @@ getTopROIperZ <- function(rawSubsettedDataByROI) {
   return(roi.sort.max.dff)
 }
 
-getArbitraryTopROIsPerZ <- function(rawSubsettedDataByROI,bottomPercentageToDiscard=0.9,threshold=0) {
-  rois <- sapply(rawSubsettedDataByROI, function(x) {
-    sapply(x, function(y) {
-      max(y$signal)
-    })
-  })
-  rois.sort <- lapply(rois,sort)
-  rois.sort.max <- lapply(rois.sort,function(roi.sort) {
-    roi.sort[(round(length(roi.sort)*bottomPercentageToDiscard)):length(roi.sort)]
-  })
 
-  rois <- sapply(rawSubsettedDataByROI, function(x) {
-    sapply(x, function(y) {
-      mean(y$background)
-    })
-  })
-  
-  rois.background.sort <- mapply(function(x,y) {
-    x[names(y)]
-  },x=rois,y=rois.sort.max)
-
-  dff <- mapply(function(background,rawSignal,threshold) {
-    signal=rawSignal
-
-    dff.temp=(signal - background)/background
-    if (threshold==0) {
-      return(dff.temp)
-    } else {
-      if (!any(dff.temp > threshold)) {
-        return (NULL)
-      }
-    }
-    return(dff.temp)
-  },
-          background=rois.background.sort,
-          rawSignal=rois.sort.max,
-          threshold=threshold,
-          SIMPLIFY = F)
-  
-  return(dff)
-}
 
 rois.sort <- sort(sapply(rois, function(x) max(x$signal)))
 rois.sort.max <- which.max(rois.sort)
@@ -257,3 +217,10 @@ zzz.hist=hist(sapply(zzz,function(x) which.max(diff(x))),breaks = length(zzz))
 timeRiseStarts <- zzz.hist$breaks[which.max(zzz.hist$counts)]
 
 # maybe I want to try to compare each of the plots to a model???
+stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS")
+stimulusParametersList <- readRDS(file=stimParListRDS)
+myFile=file.path(imageDir,"AABA-20190211-SabineSimple-laser_3-GCaMP7b-SP","AABA-20190211-SabineSimple-laser_3-GCaMP7b-SP.mat")
+file.h5 <- H5File$new(myFile, mode = "r")
+imageDataSlice<-file.h5[["imagedata"]]
+
+processSingleStimulus.lapply(myList=stimulusParametersList[["AABA"]][[3]],outputType = "dff",writeNRRD = T,image=imageDataSlice,resizeFactor = 2,downSampleImage=T)
