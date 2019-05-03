@@ -26,7 +26,7 @@ if (nrow(stimdf[stimdf$shader=='green',])==4) {
     someDodgyFix <- stimdf[stimdf$shader=='green',"seconds"][2]
   }
 } else {
-  someDodgyFix <- stimdf[stimdf$shader=='green',"seconds"][2]
+  someDodgyFix <- stimdf[stimdf$shader=='green',"seconds"][1]
 }
 
 
