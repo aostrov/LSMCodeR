@@ -7,7 +7,6 @@ for (mats in completedMats) {
   completedMats.list[[substr(basename(mats),1,4)]] <- readRDS(mats)
 }
 
-fishGenos <- read.csv(file.path(LSMCodeRConfig$srcdir,"models","DSLM-fish.csv"))
 fishFullGeno <- c()
 for (i in unique(substr(names(completedMats.list),1,3))){
   fishFullGeno <- c(fishFullGeno,as.character(unique(fishGenos[fishGenos$Fish==i,"Full_geno"])))
@@ -44,6 +43,7 @@ for (k in 1:length(completedMats.list)){
   }
   analysisDF.animals$animal <- as.factor(animal)
   analysisDF <- rbind(analysisDF,analysisDF.animals)
+  
 }
 
 
@@ -52,6 +52,8 @@ for (fish in 1:length(fishFullGeno)) {
 }
 analysisDF$geno <- as.factor(analysisDF$geno)
 saveRDS(analysisDF,file=file.path(LSMCodeRConfig$srcdir,"objects",paste("analysisDF",".RDS",sep="")))
+
+analysisDF.subset <- subset(analysisDF,background.mean > 20)
 
 # analysisDF.block <- analysisDF[substr(analysisDF$stimulus,1,1)==1,]
 # analysisDF.stimulus <- analysisDF[substr(analysisDF$stimulus,3,3)==3,]
@@ -133,3 +135,10 @@ ggplot(subset(animalSummaryDF2, animalSummaryDF2$animal!="AAM" ),
        aes(geno,dff.mean)) + 
   geom_boxplot(notch = F) +
   xlab("Genotype") + ylab("DF/F") + theme(legend.position = "none") #+ geom_jitter(aes(color=animalKey))
+
+# subset the dataset so that only the top responders are plotted
+zzz=getArbitraryTopROIsPerZ(aaia,threshold = 0.5)
+zz=topRespondersDF(zzz)
+ggplot(subset(analysisDF.subset,animal=="AAIA" & z_plane%in%unique(zz$z) & roi%in%zz$roi),aes(background.mean,dff.max)) + 
+  geom_jitter(aes(color=z_plane)) + facet_wrap(~stimulus, ncol=4)
+

@@ -1,11 +1,11 @@
 ############
 ##Anatomy##
 ############
-
+myAnatomyFile <- file.path("F:/Imaging/GCaMP7_tests/20181204-g7/ABF-iGABASnFr-Anatomy","ABF-iGABASnFr-Anatomy.mat")
 # myFile<-"F:/Imaging/GCaMP7_tests/20181204-g7/20181204-gcamp7F-7d-anatomyPost/20181204-gcamp7F-7d-anatomyPost.mat"
 outDir<-dirname(myAnatomyFile)
 outDirSubDir<-"anatomyPost"
-reorderImageSlices=c(32:1,50:35) # NULL # or c(84:100,1:83)
+# reorderImageSlices=c(32:1,50:35) # NULL # or c(84:100,1:83)
 roundOutput = TRUE
 dtype = 'short'
 

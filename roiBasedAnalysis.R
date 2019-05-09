@@ -1,14 +1,3 @@
-if (!exists("tectumROIs")) tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
-# anatomyFiles <- dir(imageDir,patt="^[A-Z]{3}-")
-# physiologyFilesSP <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]*SP",full=T,rec=TRUE)
-# multiplaneFiles <- setdiff(
-#   dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE),
-#   physiologyFilesSP
-#   )
-
-pixelSize=0.8
-roiEdgeLength <- 26
-
 stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS")
 
 cleanLSMAnalysis <- function(){
@@ -67,7 +56,7 @@ for (myFile in myFiles) {
                                                                                   y=tempDF[tectumROIforZ,"y"],
                                                                                   w=tempDF[tectumROIforZ,"w"],
                                                                                   h=tempDF[tectumROIforZ,"h"])
-    }
+    } # attr(roiList, "ROI_info" ) = attrVector
     
     statisticsList <- list()
     
@@ -100,7 +89,7 @@ for (myFile in myFiles) {
             hdf5Image.mat = imageDataSlice,
             frame.start = stimulusParametersList[[matFileCode]][[stimulation]]$start, # 750,
             frame.end = stimulusParametersList[[matFileCode]][[stimulation]]$end,
-            offset = 399
+            offset = offset
           )
         },
         roiList=matFileROIListByZ,z=as.integer(sub("z_","",names(matFileROIListByZ))),SIMPLIFY = F
@@ -114,12 +103,16 @@ for (myFile in myFiles) {
       test <- lapply(rawDataForMatFileByROIs, function(x) {
         lapply(x,
                function(y) {
-                 background <- apply(y[,,c((700/z_planes):(900/z_planes))],3,mean)
-                 attr(background,"start") <- 700/z_planes
-                 attr(background,"end") <- 900/z_planes
-                 signal <- apply(y[,,c((900/z_planes):(1500/z_planes))],3,mean)
-                 attr(signal,"start") <- 900/z_planes
-                 attr(signal,"end") <- 1500/z_planes
+                 background <- apply(y[,,
+                                       c((protocolList$sabineProtocolSimple$background.start/z_planes):
+                                           (protocolList$sabineProtocolSimple$background.end/z_planes))],3,mean)
+                 attr(background,"start") <- protocolList$sabineProtocolSimple$background.start/z_planes
+                 attr(background,"end") <- protocolList$sabineProtocolSimple$background.end/z_planes
+                 
+                 signal <- apply(y[,,c((protocolList$sabineProtocolSimple$signal.start/z_planes):
+                                         (protocolList$sabineProtocolSimple$signal.end/z_planes))],3,mean)
+                 attr(signal,"start") <- protocolList$sabineProtocolSimple$signal.start/z_planes
+                 attr(signal,"end") <- protocolList$sabineProtocolSimple$signal.end/z_planes
                  return(list(background=background,signal=signal))
                })
       })
@@ -128,8 +121,10 @@ for (myFile in myFiles) {
       
       statisticsList[[stimulation]]<- lapply(
         rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
-        analysisWindow=c((900/z_planes):(1500/z_planes)),
-        backgroundWindow=c((700/z_planes):(900/z_planes))
+        analysisWindow=c((protocolList$sabineProtocolSimple$signal.start/z_planes):
+                           (protocolList$sabineProtocolSimple$signal.end/z_planes)),
+        backgroundWindow=c((protocolList$sabineProtocolSimple$background.start/z_planes):
+                             (protocolList$sabineProtocolSimple$background.start/z_planes))
       )
       
       attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=stimulusParametersList[[matFileCode]][[stimulation]]$start,

@@ -85,6 +85,8 @@ getArbitraryTopROIsPerZ <- function(rawSubsettedDataByROI,
   threshold=threshold,
   SIMPLIFY = F)
   
+  attr(dff,"bottomPercentageToDiscard") <- bottomPercentageToDiscard
+  attr(dff,"threshold") <- threshold
   return(dff)
 }
 

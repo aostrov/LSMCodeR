@@ -5,7 +5,6 @@ if (!exists("LSMCodeRConfig")) stop("Please start up the project...")
 # go ahead and load those.
 stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS")
 
-tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
 myFiles <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)
 
 
@@ -21,8 +20,6 @@ for (myFile in myFiles) {
     print("Setting up the trial information")
     # animal[[basename(myFile)]] <- makeTrial(myFile)
     stimulusParametersList[[matFileCode]] <- makeTrial(myFile)
-    # saving the list inside the loop doesn't make a whole lot of sense...
-    saveRDS(stimulusParametersList,file=file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS"),compress = TRUE)
     file.h5$close()
     imageDataSlice$close()
     
@@ -30,3 +27,6 @@ for (myFile in myFiles) {
     print(paste(matFileCode,"already exists in stimulusParametersList. Skipping."))
   }
 }
+
+# saving the list inside the loop doesn't make a whole lot of sense...
+saveRDS(stimulusParametersList,file=file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS"),compress = TRUE)
