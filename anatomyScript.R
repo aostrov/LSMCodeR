@@ -5,9 +5,6 @@
 anatomyFiles <- dir("/Volumes/home/anatomy",rec=T,patt="[A|a]natomy.mat",full=T)
 anatomyFiles <- sample(anatomyFiles,length(anatomyFiles))
 
-for (anatomyFile in anatomyFiles) {
-  checkForExistingFile(anatomyFile,writeAnatomyStacksFromHD5,"~/Desktop/tmpNRRD/")
-}
 
 # Another single use function, this takes an Anatomy.mat file and makes
 # and average image of the slices, re-orders them as needed, and also
@@ -74,8 +71,14 @@ checkForExistingFile <- function(inputFileWithFullPath,cmd,outputDirectory,...) 
   if (file.exists(file.path(outputDirectory,fishNameFull))) return(print("File exists. Skipping."))
   if (file.exists(lockFile)) return("File is being worked on. Skipping.")
 
+  print(paste("Working on:",fishNameFull))
   cat("some text here",file=lockFile)
   on.exit(unlink(lockFile))
 
   cmd(inputFileWithFullPath,outputDirectory,fishNameFull)
+}
+
+for (anatomyFile in anatomyFiles) {
+  # print(anatomyFile)
+  checkForExistingFile(anatomyFile,writeAnatomyStacksFromHD5,file.path(imageDir,"anatomyStacks"))
 }
