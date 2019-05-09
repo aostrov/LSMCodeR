@@ -225,3 +225,4 @@ file.h5 <- H5File$new(myFile, mode = "r")
 imageDataSlice<-file.h5[["imagedata"]]
 
 processSingleStimulus.lapply(myList=stimulusParametersList[["AABA"]][[3]],outputType = "dff",writeNRRD = T,image=imageDataSlice,resizeFactor = 2,downSampleImage=T)
+
