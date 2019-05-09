@@ -1,16 +1,20 @@
 # Basic set up
 # require("xml2")
-require('hdf5r')
-require('nat')
-require("magick")
-require('ggplot2')
+# require('hdf5r')
+# require('nat')
+# require("magick")
+# require('ggplot2')
 # require('squash')
-require('digest')
+# require('digest')
 # require(doParallel)
 # require(doSNOW)
-require("viridis")
+# require("viridis")
 
-packages <- c("viridis"=require("viridis"),"doSNOW"=require(doSNOW))
+packages <- c("viridis"=require("viridis"),
+              "hdf5r"=require('hdf5r'),
+              "nat"=require('nat'),
+              "magick"=require('magick'),
+              "ggplot2"=require('ggplot2'))
 
 # this should be a function that can call itself recursively
 for (package in 1:length(packages)) {
