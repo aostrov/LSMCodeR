@@ -52,7 +52,7 @@ writeAnatomyStacksFromHD5 <- function(matFileWithPath,outdir,outFileBaseName) {
              file.path(outdir,paste("MAX_",outFileBaseName,sep="")),
              dtype = "short")
   file.h5$close()
-  imageDataSlice$close()
+  imageData$close()
   
 }
   
@@ -66,7 +66,8 @@ writeAnatomyStacksFromHD5 <- function(matFileWithPath,outdir,outFileBaseName) {
 checkForExistingFile <- function(inputFileWithFullPath,cmd,outputDirectory,...) {
   input <- basename(inputFileWithFullPath)
   fishName=substr((basename(inputFileWithFullPath)),1,3)
-  geno=sub(" ","_",fishGenos[fishGenos$Fish==fishName,"Full_geno"])
+  geno=unique(sub(" ","_",fishGenos[fishGenos$Fish==fishName,"Full_geno"]))
+  if (length(geno)>1) return("Panic")
   fishNameFull <- paste(fishName,"_",geno,"-Anatomy.nrrd",sep="")
   # lockfile needs to be generalized
   lockFile <- file.path(outputDirectory,paste(fishNameFull,".lock",sep=""))
