@@ -34,7 +34,7 @@ if (file.exists(stimParListRDS) & exists("stimulusParametersList")) {
 # for (myFile in sample(dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)[1:2],
 #                       length(dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)[1:2]))) {
 
-myFiles <- dir(imageDir,patt="[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)
+myFiles <- dir(imageDir,patt="^[A-Z]{4}-[[:graph:]]",full=T,rec=TRUE)
 
 
 for (myFile in myFiles) {
@@ -96,35 +96,36 @@ for (myFile in myFiles) {
       )
       
       z_planes=attr(stimulusParametersList[[matFileCode]],"imageDimensions")[['z']]
+      background.start  <- protocolList$sabineProtocolSimple$background.start/z_planes
+      background.end    <- protocolList$sabineProtocolSimple$background.end/z_planes
+      signal.start      <- protocolList$sabineProtocolSimple$signal.start/z_planes
+      signal.end        <- protocolList$sabineProtocolSimple$signal.end/z_planes
       # save the relevant data from each ROI.
       # full data still exists as .mat files
       # but it might be nice to have the background
       # and signal areas saved externally
-      test <- lapply(rawDataForMatFileByROIs, function(x) {
+      rawData <- lapply(rawDataForMatFileByROIs, function(x) {
         lapply(x,
                function(y) {
-                 background <- apply(y[,,
-                                       c((protocolList$sabineProtocolSimple$background.start/z_planes):
-                                           (protocolList$sabineProtocolSimple$background.end/z_planes))],3,mean)
-                 attr(background,"start") <- protocolList$sabineProtocolSimple$background.start/z_planes
-                 attr(background,"end") <- protocolList$sabineProtocolSimple$background.end/z_planes
+                 background <- apply(y[,,c((background.start):(background.end))],3,mean)
+                 attr(background,"start") <- background.start
+                 attr(background,"end") <- background.end
                  
-                 signal <- apply(y[,,c((protocolList$sabineProtocolSimple$signal.start/z_planes):
-                                         (protocolList$sabineProtocolSimple$signal.end/z_planes))],3,mean)
-                 attr(signal,"start") <- protocolList$sabineProtocolSimple$signal.start/z_planes
-                 attr(signal,"end") <- protocolList$sabineProtocolSimple$signal.end/z_planes
+                 signal <- apply(y[,,c((signal.start):(signal.end))],3,mean)
+                 attr(signal,"start") <- signal.start
+                 attr(signal,"end") <- signal.end
+
                  return(list(background=background,signal=signal))
                })
       })
-      saveRDS(test,file=file.path(LSMCodeRConfig$srcdir,"toDiscardEventually",paste(stimulation,".RDS",sep="")))
+      saveRDS(rawData,file=file.path(LSMCodeRConfig$srcdir,"toDiscardEventually",paste(stimulation,".RDS",sep="")))
       
       
       statisticsList[[stimulation]]<- lapply(
         rawDataForMatFileByROIs,getUsefulStatisticsByROI,matFileROIListByZ,
-        analysisWindow=c((protocolList$sabineProtocolSimple$signal.start/z_planes):
-                           (protocolList$sabineProtocolSimple$signal.end/z_planes)),
-        backgroundWindow=c((protocolList$sabineProtocolSimple$background.start/z_planes):
-                             (protocolList$sabineProtocolSimple$background.start/z_planes))
+        analysisWindow=c((signal.start):(signal.end)),
+        backgroundWindow=c((background.start):(background.end))
+                             
       )
       
       attr(statisticsList[[stimulation]],"ROI_Location") <- c(frame.start=stimulusParametersList[[matFileCode]][[stimulation]]$start,
