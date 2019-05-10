@@ -3,7 +3,9 @@ if (length(stimLogFile)!=1) stop(paste("Check your stimlog for file: ", myfile, 
 stimLog <- readLines(stimLogFile, warn=FALSE)
 stimLogCleaning1 <- stimLog[
   grep("@log",stimLog):length(stimLog)][grep("[[:graph:]]* [[:graph:]]* [[:graph:]]*|bar$|green$|red$",
-                                                                       stimLog[grep("@log",stimLog):length(stimLog)])]
+                                                                       stimLog[
+                                                                         grep("@log",stimLog):
+                                                                           length(stimLog)])]
 
 stimdf <- data.frame(matrix(stimLogCleaning1,ncol=2,byrow = T))
 stimdf$X2<-as.numeric(sub(" [[:graph:]]* [[:graph:]]*$","",stimdf$X2))

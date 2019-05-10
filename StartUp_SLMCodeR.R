@@ -14,7 +14,8 @@ packages <- c("viridis"=require("viridis"),
               "hdf5r"=require('hdf5r'),
               "nat"=require('nat'),
               "magick"=require('magick'),
-              "ggplot2"=require('ggplot2'))
+              "ggplot2"=require('ggplot2'),
+              "reshape2"=require('reshape2'))
 
 # this should be a function that can call itself recursively
 for (package in 1:length(packages)) {

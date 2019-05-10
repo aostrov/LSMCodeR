@@ -1,9 +1,5 @@
 # LSMLogParser.R
 
-# lsmLogFile <- file.path(LSMCodeRConfig$logDir,
-                     # "20181204-gcamp7F-7d-SabineBars-1plane-2SP",
-                     # "lsmlog_acq.xml")
-# lsmLogFile <- file.path(logdir,"lsmlog_acq.xml")
 lsmLogFile <- dir(file.path(dirname(myFile),"logs"),full=T,patt="lsmlog_")
 if (length(lsmLogFile)!=1) stop(paste("Check your lsmLogFile for file: ", myfile, sep=""))
 
@@ -45,11 +41,12 @@ for (i in transitions.stimdf.bar$correctedMilliseconds) {
 
 count=0
 slice.identity <- data.frame(slice=integer(0),z_plane=integer(0),time=integer(0))
-for (time in 1:1650){ # FIXME
-  for (z_plane in 1:20){ # FIXME
+for (time in 1:imageDataSlice.dims[['t']]){
+  for (z_plane in 1:imageDataSlice.dims[['z']]){
     count=count+1
-    slice.identity <- rbind(slice.identity,c(count,z_plane,time))
+    if (count%in%lsm.transition.frames) slice.identity <- rbind(slice.identity,c(count,z_plane,time))
+    
   }
 }
 colnames(slice.identity) <- c("slice","z_plane","time")
-slice.transitions <- slice.identity[lsm.transition.frames,]
+# slice.transitions <- slice.identity[lsm.transition.frames,]
