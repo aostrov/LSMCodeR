@@ -83,21 +83,6 @@ for (i in ((1:20)-1) ){
 }
 first <- seq(from=(13+1),to=(13+1800),by=20)
 
-# write test images to make ROIs
-dirByDate <- function(date="2019-03-05",directory=imageDir){
-  subsettedDirByDate <- dir(directory,full=T)[
-    grepl(date,file.info(dir(directory,full=T))$mtime)
-    ]
-  return(subsettedDirByDate)
-}
-recent <- dirByDate()
-recentPhysio <- recent[!grepl("Anatomy",recent)]
-
-for (image in recentPhysio) {
-  print(image)
-  writeNrrdForROISelection(file.path(image,paste(basename(image),"mat",sep=".")),"C:/Users/Aaron/Desktop/nrrdOrder/")
-}
-
 # save the relevant data from each ROI.
 # full data still exists as .mat files
 # but it might be nice to have the background
@@ -225,4 +210,12 @@ file.h5 <- H5File$new(myFile, mode = "r")
 imageDataSlice<-file.h5[["imagedata"]]
 
 processSingleStimulus.lapply(myList=stimulusParametersList[["AABA"]][[3]],outputType = "dff",writeNRRD = T,image=imageDataSlice,resizeFactor = 2,downSampleImage=T)
+
+
+# For an analysisDF ROI, can I:
+#   1) go back and get the particular nrrd that corresponds to an interesting stimulus
+#   2) figure out what part of the image corresponds to the ROI
+#   3) replot the ggplot to make this single example stand out 
+# 
+# I should be able to do this in one or two functions
 
