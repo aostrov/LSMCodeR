@@ -23,6 +23,7 @@ if (nrow(stimdf[stimdf$shader=='green',])==4) {
   }
 } else {
   someDodgyFix <- stimdf[stimdf$shader=='green',"seconds"][1]
+  warning("There was a problem with finding the green shader.\nPlease check this carefully")
 }
 
 
@@ -49,4 +50,4 @@ for (time in 1:imageDataSlice.dims[['t']]){
   }
 }
 colnames(slice.identity) <- c("slice","z_plane","time")
-# slice.transitions <- slice.identity[lsm.transition.frames,]
+slice.transitions <- slice.identity[lsm.transition.frames,]

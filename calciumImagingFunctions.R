@@ -524,12 +524,13 @@ makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow
         )$description
         
         backgroundLengthInMilliseconds <- tmpdf[tmpdf$description=="background","time"] # in ms
+        start <- slice.identity[count,"time"] # in frames
         
-        if ( imageDataSlice.dims[['z']] > 1 ) {
-          start <- slice.transitions[count,"time"] # in frames
-        } else {
-          start <- lsm.transition.frames[count]
-        }
+        # if ( imageDataSlice.dims[['z']] > 1 ) {
+        #   start <- slice.identity[count,"time"] # in frames
+        # } else {
+        #   start <- lsm.transition.frames[count]
+        # }
         
         backgroundSlices <- c( 
           start : 
