@@ -1,4 +1,4 @@
-dirByDate <- function(date="2019-03-05",directory=imageDir){
+dirByDate <- function(date=format(Sys.time(), "%Y-%m-%d"),directory=imageDir){
   subsettedDirByDate <- dir(directory,full=T)[
     grepl(date,file.info(dir(directory,full=T))$mtime)
     ]
@@ -6,7 +6,7 @@ dirByDate <- function(date="2019-03-05",directory=imageDir){
 }
 
 recent <- dirByDate()
-recentPhysio <- recent[!grepl("Anatomy",recent)]
+recentPhysio <- recent[!grepl("[A|a]natomy",recent)]
 
 for (image in recentPhysio) {
   print(image)
