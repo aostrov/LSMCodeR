@@ -219,3 +219,25 @@ processSingleStimulus.lapply(myList=stimulusParametersList[["AABA"]][[3]],output
 # 
 # I should be able to do this in one or two functions
 
+getFramesFromStimParamListFromAnalysisDF <- function(row,file,writeEntireNrrd=T,...) {
+  animal <- as.character(analysisDF[row,"animal"])
+  stim <- analysisDF[row,"stimulus"]
+  z_plane <- as.integer(sub("z_","",analysisDF[row,"z_plane"]))
+  roi <- as.integer(sub("ROI_","",analysisDF[row,"roi"]))
+
+  matfile <- dir(imageDir,pattern = paste("^",animal,sep=""),full = T, recursive = T)
+  myStim <- stimulusParametersList[[animal]][[grep(stim,names(stimulusParametersList[[animal]]))]]
+  myROIs <- tectumROIs[tectumROIs$matfile==animal & tectumROIs$z==z_plane,]
+  rois <- getROIs(roiEdgeLength = roiEdgeLength,x=myROIs$x,y=myROIs$y,w=myROIs$w,h=myROIs$h)
+
+  y_dims <- rois[[roi]]$yRange
+  x_dims <- rois[[roi]]$xRange
+  file.h5 <- H5File$new(matfile,mode = "r")
+  imageDataSlice<-file.h5[["imagedata"]]
+  if (writeEntireNrrd) {
+    write.nrrd(aperm(imageDataSlice[myStim$start:myStim$end,,z_plane,,],c(3,2,1)),file=file,...)
+  } else {
+    write.nrrd(aperm(imageDataSlice[myStim$start:myStim$end,,z_plane,y_dims,x_dims],c(3,2,1)),file=file,...)
+  }
+}
+

@@ -136,6 +136,8 @@ ggplot(subset(animalSummaryDF2, animalSummaryDF2$animal!="AAM" ),
   geom_boxplot(notch = F) +
   xlab("Genotype") + ylab("DF/F") + theme(legend.position = "none") #+ geom_jitter(aes(color=animalKey))
 
+ggplot(countingDF) + geom_histogram(aes(geno),stat="count") + scale_y_continuous(breaks = seq(0, 12))
+
 # subset the dataset so that only the top responders are plotted
 zzz=getArbitraryTopROIsPerZ(aaia,threshold = 0.5)
 zz=topRespondersDF(zzz)
