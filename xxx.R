@@ -98,49 +98,6 @@ test <- lapply(myFile, function(x) {
 ##############
 ## Analysis ##
 ##############
-analysisDF <- c()
-for (k in 1:length(matList)){
-  analysisDF.animals <- c()
-  animal <- names(matList[k])
-  print(paste("animal:",animal))
-  for (j in 1: length(matList[[k]])){
-    analysisDF.stimulus <- c()
-    stimulus <- substr(names(matList[[k]][j]),nchar(names(matList[[k]][j]))-2,nchar(names(matList[[k]][j])))
-    print(paste("stimulus:",stimulus))
-    for (i in 1:length(matList[[k]][[j]])) {
-      analysisDF.zplane <- c()
-      z_plane <- names(matList[[k]][[j]][i])
-      analysisDF.zplane <- matList[[k]][[j]][[i]][,c("dff.mean","background.mean")]
-      analysisDF.zplane$z_plane <- as.factor(z_plane)
-      analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
-    }
-    analysisDF.stimulus$stimulus <- as.factor(stimulus)
-    analysisDF.animals <- rbind(analysisDF.animals,analysisDF.stimulus)
-  }
-  analysisDF.animals$animal <- as.factor(animal)
-  analysisDF <- rbind(analysisDF,analysisDF.animals)
-}
-
-
-ggplot(analysisDF.subset,aes(background.mean,dff.mean)) + 
-  geom_jitter(aes(color=animal))
-
-# plot a raster of the image
-ggplot(matList[[1]][[5]][[1]],aes(xpos,ypos,fill=dff.mean)) + 
-  geom_raster(interpolate = F) + 
-  scale_fill_gradientn(colors = jet(20)) +
-  coord_fixed() + scale_y_reverse()
-
-# background > 25 and dff > 0.05
-analysisDF.subset <- subset(analysisDF,background.mean>25 & dff.mean>0.05)
-
-for (plane in 1:20) {
-  yyy=lapply(
-    currentStimulusParameters, # list being worked on
-    processSingleStimulus.lapply, # function doing the work
-    outputType="dff",writeNRRD=T,downSampleImage=T,resizeFactor=2,image=imageDataSlice,z_plane=plane # other variables
-    )
-}
 
 # time series stuff
 aaia <- readRDS(file.path(LSMCodeRConfig$srcdir,"toDiscardEventually/AAIA-gen_A_laser-3_SabineSimple.mat.1.1.RDS"))
@@ -239,5 +196,23 @@ getFramesFromStimParamListFromAnalysisDF <- function(row,file,writeEntireNrrd=T,
   } else {
     write.nrrd(aperm(imageDataSlice[myStim$start:myStim$end,,z_plane,y_dims,x_dims],c(3,2,1)),file=file,...)
   }
+  # return(paste())
 }
 
+# a slightly messy, but easier to script way of subsetting analysisDF, for future use...
+# analysisDF[with(analysisDF,background.mean>background.floor & background.mean<background.ceiling & dff.max > dff & snr.mean > snr),][1,]
+
+# an example function for writing a pdf that can indicate where an ROI is located
+# in an image. For example, to be overlaid with a movie in a presentation
+writeRectForROI <- function() {
+  pdf(file="C:/Users/Aaron/Desktop/testRect.pdf",
+      title = "",
+      width = (7*700/1024),
+      height = 7*(1024/700))
+  plot(x = c(1,700), y = c(1,1024), 
+       xlim = c(1,700), ylim = c(1024,1),
+       type = "n",ann = F,axes = F, frame.plot = T)
+  rect(xleft = 493,xright = 519,
+       ytop = 350,ybottom = 376)
+  dev.off()
+}
