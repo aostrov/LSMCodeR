@@ -101,6 +101,8 @@ test <- lapply(myFile, function(x) {
 
 # time series stuff
 aaia <- readRDS(file.path(LSMCodeRConfig$srcdir,"toDiscardEventually/AAIA-gen_A_laser-3_SabineSimple.mat.1.1.RDS"))
+abra <- readRDS(file.path(LSMCodeRConfig$srcdir,"toDiscardEventually/ABRA-gen_A-laser-1-SabineSimple.mat.1.1.RDS"))
+aaaa1.1 <- readRDS(file.path(LSMCodeRConfig$srcdir,"toDiscardEventually/AAAA-20190211-SabineSimple-laser_3-SP.mat.1.1.RDS"))
 
 make_norm_dist <- function(x, mean, sd){
   norm = c()
@@ -176,43 +178,72 @@ processSingleStimulus.lapply(myList=stimulusParametersList[["AABA"]][[3]],output
 # 
 # I should be able to do this in one or two functions
 
-getFramesFromStimParamListFromAnalysisDF <- function(row,file,writeEntireNrrd=T,...) {
-  animal <- as.character(analysisDF[row,"animal"])
-  stim <- analysisDF[row,"stimulus"]
-  z_plane <- as.integer(sub("z_","",analysisDF[row,"z_plane"]))
-  roi <- as.integer(sub("ROI_","",analysisDF[row,"roi"]))
-
-  matfile <- dir(imageDir,pattern = paste("^",animal,sep=""),full = T, recursive = T)
-  myStim <- stimulusParametersList[[animal]][[grep(stim,names(stimulusParametersList[[animal]]))]]
-  myROIs <- tectumROIs[tectumROIs$matfile==animal & tectumROIs$z==z_plane,]
-  rois <- getROIs(roiEdgeLength = roiEdgeLength,x=myROIs$x,y=myROIs$y,w=myROIs$w,h=myROIs$h)
-
-  y_dims <- rois[[roi]]$yRange
-  x_dims <- rois[[roi]]$xRange
-  file.h5 <- H5File$new(matfile,mode = "r")
-  imageDataSlice<-file.h5[["imagedata"]]
-  if (writeEntireNrrd) {
-    write.nrrd(aperm(imageDataSlice[myStim$start:myStim$end,,z_plane,,],c(3,2,1)),file=file,...)
-  } else {
-    write.nrrd(aperm(imageDataSlice[myStim$start:myStim$end,,z_plane,y_dims,x_dims],c(3,2,1)),file=file,...)
-  }
-  # return(paste())
+subsetArbitraryDF <- function(df,row){
+  return(df[row,])
 }
 
-# a slightly messy, but easier to script way of subsetting analysisDF, for future use...
-# analysisDF[with(analysisDF,background.mean>background.floor & background.mean<background.ceiling & dff.max > dff & snr.mean > snr),][1,]
 
-# an example function for writing a pdf that can indicate where an ROI is located
-# in an image. For example, to be overlaid with a movie in a presentation
-writeRectForROI <- function() {
-  pdf(file="C:/Users/Aaron/Desktop/testRect.pdf",
-      title = "",
-      width = (7*700/1024),
-      height = 7*(1024/700))
-  plot(x = c(1,700), y = c(1,1024), 
-       xlim = c(1,700), ylim = c(1024,1),
-       type = "n",ann = F,axes = F, frame.plot = T)
-  rect(xleft = 493,xright = 519,
-       ytop = 350,ybottom = 376)
-  dev.off()
+
+
+
+# cumulative sum
+
+analysisDF <- readRDS(file.path(LSMCodeRConfig$srcdir,"objects",paste("analysisDF",".RDS",sep="")))
+animals <- unique(substr(analysisDF$animal,1,3))
+
+cumSumDF <- data.frame()
+for (animal in animals) {
+  animalAnalysisDF <- analysisDF[grepl(paste("^",animal,sep=""),analysisDF$animal),]
+  dffs <- animalAnalysisDF[
+    is.finite(animalAnalysisDF$dff.max) & animalAnalysisDF$background.mean > quantile(animalAnalysisDF$background.mean)["25%"],
+    "dff.max"
+    ]
+  names(dffs) <- rownames(animalAnalysisDF[
+    is.finite(animalAnalysisDF$dff.max) & animalAnalysisDF$background.mean > quantile(animalAnalysisDF$background.mean)["25%"],
+    ])
+  dffs.sort <- sort(dffs)
+  dffs.cumsum <- cumsum(dffs.sort)
+  dffs.cumsum.percent <- dffs.cumsum/(max(dffs.cumsum))
+  dffs.df <- data.frame(sorteddFF=dffs.sort,cumSumPercent=dffs.cumsum.percent)
+  dffs.df$animal <- animal
+  dffs.df$genotype <- unique(as.character(animalAnalysisDF$geno))
+  cumSumDF <- rbind(cumSumDF,dffs.df)
+}
+
+
+ggplot(data=dffs.df,aes(sorteddFF,cumSumPercent)) + 
+  geom_point() + 
+  geom_point(data=dffs.df[findInterval(0.5,dffs.df$cumSumPercent),],color="red",size=2)
+
+ggplot(data=cumSumDF[(cumSumDF$animal!="AAM" |  cumSumDF$animal!="ABJ") &
+                       cumSumDF$genotype!="iGABASnFr" & 
+                       cumSumDF$cumSumPercent>0.45 & 
+                       cumSumDF$cumSumPercent<0.55,],
+       aes(sorteddFF,cumSumPercent)) + 
+  geom_point(aes(color=genotype)) + 
+  xlim(c(0,5)) #+ ylim(c(45,55))
+
+# TODO: maybe get an average for each animal, of each 1 or 10% of the dffs. 
+# See how much that differs at 50% from using the full range of numbers. 
+# Then use that to average across animals per genotype.
+deciles <- quantile(cumSumDF$cumSumPercent,probs = seq(0,1,.1))
+bottom <- cumSumDF[cumSumDF$cumSumPercent>deciles[1] & cumSumDF$cumSumPercent<deciles[2],]
+
+decile <- 0
+decileDF <- data.frame()
+for (animal in animals) {
+  animalAnalysisDF2 <- cumSumDF[grepl(paste("^",animal,sep=""),cumSumDF$animal),]
+  deciles <- quantile(animalAnalysisDF2$sorteddFF,probs = seq(0,1,.1))
+  if ( deciles[decile+1] == deciles[decile+2] ) {
+    print("Deciles are the same, using the larger of the two")
+    bottom <- animalAnalysisDF[animalAnalysisDF$cumSumPercent>deciles[(decile + 2)],]
+  } else {
+    bottom <- animalAnalysisDF[animalAnalysisDF$cumSumPercent>deciles[decile + 1] & 
+                                 animalAnalysisDF$cumSumPercent<deciles[(decile + 2)],]
+  }
+  
+  tempDF <- data.frame(cumSumPercent=mean(bottom$cumSumPercent),
+                       dFF=mean(bottom$sorteddFF),
+                       animal=animal,genotype=unique(bottom$genotype))
+  decileDF <- rbind(decileDF,tempDF)
 }

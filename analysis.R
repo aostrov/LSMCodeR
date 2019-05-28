@@ -71,14 +71,16 @@ ggplot(subset(analysisDF,
               background.mean>50 &
                 background.mean<400 & 
                 dff.max > 0.75 &
-                snr.mean > 3 & animal!="AAMA"),
+                snr.mean > 3),
        aes(geno,snr.max)) + 
-  geom_boxplot(notch = T)
+  geom_boxplot(notch = F)
 
 ggplot(analysisDF) + geom_histogram(aes(geno),stat="count")
 
 # Set things up to get average data by animal
 animalSummaryDF2 <- data.frame(dff.mean=double(),
+                               dff.75quantile=double(),
+                               dff.2sd=double(),
                                snr.mean=double(),
                                background.mean=double(),
                                #animal=character(),
@@ -117,6 +119,8 @@ for (animal in animals2){
   
   if (nrow(tempDF.animals.subset.bestStim)>0) {
     tempSummary=data.frame(dff.mean=mean(tempDF.animals.subset.bestStim$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)]),
+                           dff.75quantile=quantile(tempDF.animals.subset$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)])[["75%"]],
+                           dff.2sd=get2SD(),
                            snr.mean=mean(tempDF.animals.subset.bestStim$snr.max[is.finite(tempDF.animals.subset.bestStim$snr.max)]),
                            background.mean=mean(tempDF.animals.subset.bestStim$background.mean[is.finite(tempDF.animals.subset.bestStim$background.mean)]),
                            #animal=unique(tempDF.animals.subset.bestStim$animal),
@@ -130,11 +134,17 @@ for (animal in animals2){
   
 }
 
+get2SD<- function(){
+  dff.mean <- mean(tempDF.animals.subset.bestStim$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)])
+  dff.sd <- sd(tempDF.animals.subset.bestStim$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)])
+  if (is.na(dff.sd)) dff.sd <- 0
+  return(dff.mean + 2*dff.sd)
+}
 
 ggplot(subset(animalSummaryDF2, animalSummaryDF2$animal!="AAM" ),
-       aes(geno,dff.mean)) + 
+       aes(geno,dff.75quantile)) + 
   geom_boxplot(notch = F) +
-  xlab("Genotype") + ylab("DF/F") + theme(legend.position = "none") #+ geom_jitter(aes(color=animalKey))
+  xlab("Genotype") + ylab("DF/F (75th quantile)") + theme(legend.position = "none") + geom_jitter(aes(color=animalKey))
 
 ggplot(countingDF) + geom_histogram(aes(geno),stat="count") + scale_y_continuous(breaks = seq(0, 12))
 

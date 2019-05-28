@@ -371,6 +371,7 @@ getROIsRawDataFromHDF5.lapply <- function(roiListElement,z=1,hdf5Image.mat,frame
 }
 
 getUsefulStatisticsByROI <- function(rawDataByROI,roiList,analysisWindow=c(900:1500),backgroundWindow=c(750:850)) {
+  
   usefulStatisticsByROI.DF <- data.frame(
     # raw but offset correct background
     background.mean=sapply(rawDataByROI,function(x) mean(x[,,backgroundWindow])),
@@ -403,6 +404,11 @@ getUsefulStatisticsByROI <- function(rawDataByROI,roiList,analysisWindow=c(900:1
     }),
     dff.sd=sapply(rawDataByROI, function(x){
       dff <- sd(apply(makeDFF(x,backgroundSlices=backgroundWindow,xyzDimOrder=c(1,2,3))[,,analysisWindow],3,mean))
+      dff[is.nan(dff)]=0
+      return(dff)
+    }),
+    dff.sgolay=sapply(rawDataByROI, function(x){
+      dff <- max(apply(sgolayfilt(makeDFF(x,backgroundSlices=backgroundWindow,xyzDimOrder=c(1,2,3)),p=2)[,,analysisWindow],3,mean))
       dff[is.nan(dff)]=0
       return(dff)
     }),

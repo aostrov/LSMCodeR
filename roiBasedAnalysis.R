@@ -21,7 +21,7 @@ if (file.exists(stimParListRDS) & exists("stimulusParametersList")) {
 } else {
   print("There is no stimulusParametersList on disk or in memory.")
   print("Starting stimulusParametersList from scratch.")
-  source(file.path(LSMCodeRConfig$srcdir,"createStimParamterList.R"))
+  source(file.path(LSMCodeRConfig$srcdir,"createStimParameterList.R"))
 }
 
 
@@ -51,6 +51,7 @@ for (myFile in myFiles) {
     matFileROIListByZ <- list()
     for (tectumROIforZ in 1:nrow(tempDF <- tectumROIs[as.character(tectumROIs$matfile)==matFileCode,])) {
       print(tectumROIforZ)
+      if (is.na(tempDF)) print("Check to see if you've updated and reloaded tectumROIs.csv")
       matFileROIListByZ[[paste("z",tempDF[tectumROIforZ,"z"],sep="_")]] = getROIs(roiEdgeLength = roiEdgeLength,
                                                                                   x=tempDF[tectumROIforZ,"x"],
                                                                                   y=tempDF[tectumROIforZ,"y"],
@@ -114,8 +115,14 @@ for (myFile in myFiles) {
                  signal <- apply(y[,,c((signal.start):(signal.end))],3,mean)
                  attr(signal,"start") <- signal.start
                  attr(signal,"end") <- signal.end
-
-                 return(list(background=background,signal=signal))
+                 
+                 sgolaySignal <- sgolayfilt(signal,p=2)
+                 attr(sgolaySignal,"start") <- signal.start
+                 attr(sgolaySignal,"end") <- signal.end
+                 
+                 return(list(background=background,
+                             signal=signal,
+                             sgolaySignal=sgolaySignal))
                })
       })
       saveRDS(rawData,file=file.path(LSMCodeRConfig$srcdir,"toDiscardEventually",paste(stimulation,".RDS",sep="")))
