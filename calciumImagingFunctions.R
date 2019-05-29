@@ -407,11 +407,12 @@ getUsefulStatisticsByROI <- function(rawDataByROI,roiList,analysisWindow=c(900:1
       dff[is.nan(dff)]=0
       return(dff)
     }),
-    dff.sgolay=sapply(rawDataByROI, function(x){
-      dff <- max(apply(sgolayfilt(makeDFF(x,backgroundSlices=backgroundWindow,xyzDimOrder=c(1,2,3)),p=2)[,,analysisWindow],3,mean))
-      dff[is.nan(dff)]=0
-      return(dff)
-    }),
+    # dff.sgolay=sgolayfilt(sapply(rawDataByROI, function(x){
+    #   dff <- max(apply(makeDFF(x,backgroundSlices=backgroundWindow,xyzDimOrder=c(1,2,3))[,,analysisWindow],3,mean))
+    #   dff[is.nan(dff)]=0
+    #   dff[is.na(dff)]=0
+    #   return(dff)
+    # }),p=2),
     # X and Y positions
     xpos=sapply(rawDataByROI,function(x) attr(x,"roiAttributes")['xPosition']),
     ypos=sapply(rawDataByROI,function(x) attr(x,"roiAttributes")['yPosition']),

@@ -51,7 +51,10 @@ for (myFile in myFiles) {
     matFileROIListByZ <- list()
     for (tectumROIforZ in 1:nrow(tempDF <- tectumROIs[as.character(tectumROIs$matfile)==matFileCode,])) {
       print(tectumROIforZ)
-      if (is.na(tempDF)) print("Check to see if you've updated and reloaded tectumROIs.csv")
+      if (is.na(tempDF[1,])){
+        print("Check to see if you've updated and reloaded tectumROIs.csv")
+        unlink(lockFile)
+      }
       matFileROIListByZ[[paste("z",tempDF[tectumROIforZ,"z"],sep="_")]] = getROIs(roiEdgeLength = roiEdgeLength,
                                                                                   x=tempDF[tectumROIforZ,"x"],
                                                                                   y=tempDF[tectumROIforZ,"y"],
