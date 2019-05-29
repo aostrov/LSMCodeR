@@ -230,20 +230,49 @@ deciles <- quantile(cumSumDF$cumSumPercent,probs = seq(0,1,.1))
 bottom <- cumSumDF[cumSumDF$cumSumPercent>deciles[1] & cumSumDF$cumSumPercent<deciles[2],]
 
 decile <- 0
-decileDF <- data.frame()
+percentDF <- data.frame()
 for (animal in animals) {
-  animalAnalysisDF2 <- cumSumDF[grepl(paste("^",animal,sep=""),cumSumDF$animal),]
-  deciles <- quantile(animalAnalysisDF2$sorteddFF,probs = seq(0,1,.1))
-  if ( deciles[decile+1] == deciles[decile+2] ) {
-    print("Deciles are the same, using the larger of the two")
-    bottom <- animalAnalysisDF[animalAnalysisDF$cumSumPercent>deciles[(decile + 2)],]
-  } else {
-    bottom <- animalAnalysisDF[animalAnalysisDF$cumSumPercent>deciles[decile + 1] & 
-                                 animalAnalysisDF$cumSumPercent<deciles[(decile + 2)],]
-  }
+  animalAnalysisDF2 <- analysisDF[grepl(paste("^",animal,sep=""),analysisDF$animal),]
+  animalAnalysisDF2 <- animalAnalysisDF2[is.finite(animalAnalysisDF2$dff.max) & 
+                                           animalAnalysisDF2$background.mean > quantile(animalAnalysisDF2$background.mean)["25%"],]
+  percents <- quantile(animalAnalysisDF2$dff.max,probs = seq(0,1,.01),names = FALSE,na.rm = TRUE)
+  percent.cumsum <- cumsum(percents)/max(cumsum(percents))
   
-  tempDF <- data.frame(cumSumPercent=mean(bottom$cumSumPercent),
-                       dFF=mean(bottom$sorteddFF),
-                       animal=animal,genotype=unique(bottom$genotype))
-  decileDF <- rbind(decileDF,tempDF)
+
+    
+  tempDF <- data.frame(PercentdFF=percents,
+                       cumsum=percent.cumsum,
+                       percentile=c(0:100),
+                       animal=animal,
+                       genotype=unique(animalAnalysisDF2$geno))
+  percentDF <- rbind(percentDF,tempDF)
 }
+
+genotypes=unique(percentDF$genotype)
+averageDFF <- data.frame()
+for (genotype in genotypes){
+  genos=percentDF[percentDF$genotype==genotype,]
+  animals=as.character(unique(genos$animal))
+  averageDFF.wide <- data.frame(percentile=c(0:100))
+  for (animal in animals) {
+    averageDFF.wide <- cbind(averageDFF.wide,genos[genos$animal==animal,"PercentdFF"])
+    means <- c()
+    SDs <- c()
+    for (row in 1:nrow(averageDFF.wide)) {
+      means <- c(means,mean(unlist(averageDFF.wide[row,c(2:length(averageDFF.wide))])))
+      SDs <- c(SDs,sd(unlist(averageDFF.wide[row,c(2:length(averageDFF.wide))])))
+    }
+    averageDFF.long <- data.frame(percentile=c(0:100),
+                                  means=means,
+                                  SDs=SDs,
+                                  genotype=genotype)
+  }
+  averageDFF <- rbind(averageDFF,averageDFF.long)
+}
+
+
+averageDFF=averageDFF/length(animals)
+
+ggplot(data=percentDF,
+       aes(PercentdFF,cumsum)) + 
+  geom_point(aes(color=genotype))
