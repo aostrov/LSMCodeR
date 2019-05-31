@@ -32,7 +32,7 @@ getFramesFromStimParamListFromAnalysisDF <- function(row,file,writeEntireNrrd=T,
       print("Using full image.")
       write.nrrd(aperm(imageDataSlice[myStim$start:myStim$end,,z_plane,,],c(3,2,1)),file=file,...)
     }
-    writeRectForROI(file=paste(file,"pdf",sep = "."),imageDataSlice.dims[['x']],imageDataSlice.dims[['y']],x_dims,y_dims)
+    writeRectForROI(file=paste(file,"png",sep = "."),imageDataSlice.dims[['x']],imageDataSlice.dims[['y']],x_dims,y_dims)
     
     ggplot(
       analysisDF[sampleAnalysisDFRownamesByGenotype(500,genotype = analysisDF[row,"geno"],20,0.75),],
@@ -54,15 +54,29 @@ getFramesFromStimParamListFromAnalysisDF <- function(row,file,writeEntireNrrd=T,
 }
 
 writeRectForROI <- function(file,fullImageWidth,fullImageHeight,roiXRange,roiYRange) {
-  pdf(file=file,
-      title = "",
-      width = (7*fullImageWidth/fullImageHeight),
-      height = 7*(fullImageHeight/fullImageWidth))
-  plot(x = c(1,fullImageWidth), y = c(1,fullImageHeight), 
+  print(paste("fullImageWidth:",fullImageWidth))
+  print(paste("fullImageHeight:",fullImageHeight))
+  # pdf(file=file,
+  #     title = "",
+  #     width = (7*fullImageWidth/fullImageHeight),
+  #     height = 7*(fullImageHeight/fullImageWidth))
+  # op <- par(mar = rep(0,4)); on.exit(par(op))
+  # plot(x = c(1,(fullImageWidth-1)), y = c(1,(fullImageHeight-1)), 
+  #      xlim = c(1,fullImageWidth), ylim = c(fullImageHeight,1),
+  #      type = "n",ann = F,axes = F, frame.plot = T)
+  # rect(xleft = roiXRange[1],xright = roiXRange[length(roiXRange)],
+  #      ytop = roiYRange[1],ybottom = roiYRange[length(roiYRange)]
+  #      )
+  # dev.off()
+  png(filename = file,width = fullImageWidth,height = fullImageHeight,bg="transparent")
+  op <- par(mar = rep(0,4)); on.exit(par(op))
+  plot(x = c(1,(fullImageWidth-1)), y = c(1,(fullImageHeight-1)), 
        xlim = c(1,fullImageWidth), ylim = c(fullImageHeight,1),
        type = "n",ann = F,axes = F, frame.plot = T)
   rect(xleft = roiXRange[1],xright = roiXRange[length(roiXRange)],
-       ytop = roiYRange[1],ybottom = roiYRange[length(roiYRange)])
+       ytop = roiYRange[1],ybottom = roiYRange[length(roiYRange)]
+  )
+  
   dev.off()
 }
 
@@ -127,7 +141,7 @@ for (animalKey in as.character(animalSummaryDF2$animalKey)) {
 
 for (row in rownames(animalKeyDF)) {
   getFramesFromStimParamListFromAnalysisDF(row,
-                                           file=file.path("C:/Users/Aaron/Desktop/exampleTraces/",
+                                           file=file.path("~/Desktop/exampleTraces/",
                                                           paste(animalKeyDF[row,"animal"],
                                                                 "_",
                                                                 row,
