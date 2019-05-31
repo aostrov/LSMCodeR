@@ -98,52 +98,11 @@ test <- lapply(myFile, function(x) {
 ##############
 ## Analysis ##
 ##############
-analysisDF <- c()
-for (k in 1:length(matList)){
-  analysisDF.animals <- c()
-  animal <- names(matList[k])
-  print(paste("animal:",animal))
-  for (j in 1: length(matList[[k]])){
-    analysisDF.stimulus <- c()
-    stimulus <- substr(names(matList[[k]][j]),nchar(names(matList[[k]][j]))-2,nchar(names(matList[[k]][j])))
-    print(paste("stimulus:",stimulus))
-    for (i in 1:length(matList[[k]][[j]])) {
-      analysisDF.zplane <- c()
-      z_plane <- names(matList[[k]][[j]][i])
-      analysisDF.zplane <- matList[[k]][[j]][[i]][,c("dff.mean","background.mean")]
-      analysisDF.zplane$z_plane <- as.factor(z_plane)
-      analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
-    }
-    analysisDF.stimulus$stimulus <- as.factor(stimulus)
-    analysisDF.animals <- rbind(analysisDF.animals,analysisDF.stimulus)
-  }
-  analysisDF.animals$animal <- as.factor(animal)
-  analysisDF <- rbind(analysisDF,analysisDF.animals)
-}
-
-
-ggplot(analysisDF.subset,aes(background.mean,dff.mean)) + 
-  geom_jitter(aes(color=animal))
-
-# plot a raster of the image
-ggplot(matList[[1]][[5]][[1]],aes(xpos,ypos,fill=dff.mean)) + 
-  geom_raster(interpolate = F) + 
-  scale_fill_gradientn(colors = jet(20)) +
-  coord_fixed() + scale_y_reverse()
-
-# background > 25 and dff > 0.05
-analysisDF.subset <- subset(analysisDF,background.mean>25 & dff.mean>0.05)
-
-for (plane in 1:20) {
-  yyy=lapply(
-    currentStimulusParameters, # list being worked on
-    processSingleStimulus.lapply, # function doing the work
-    outputType="dff",writeNRRD=T,downSampleImage=T,resizeFactor=2,image=imageDataSlice,z_plane=plane # other variables
-    )
-}
 
 # time series stuff
 aaia <- readRDS(file.path(LSMCodeRConfig$srcdir,"toDiscardEventually/AAIA-gen_A_laser-3_SabineSimple.mat.1.1.RDS"))
+abra <- readRDS(file.path(LSMCodeRConfig$srcdir,"toDiscardEventually/ABRA-gen_A-laser-1-SabineSimple.mat.1.1.RDS"))
+aaaa1.1 <- readRDS(file.path(LSMCodeRConfig$srcdir,"toDiscardEventually/AAAA-20190211-SabineSimple-laser_3-SP.mat.1.1.RDS"))
 
 make_norm_dist <- function(x, mean, sd){
   norm = c()
@@ -219,3 +178,101 @@ processSingleStimulus.lapply(myList=stimulusParametersList[["AABA"]][[3]],output
 # 
 # I should be able to do this in one or two functions
 
+subsetArbitraryDF <- function(df,row){
+  return(df[row,])
+}
+
+
+
+
+
+# cumulative sum
+
+analysisDF <- readRDS(file.path(LSMCodeRConfig$srcdir,"objects",paste("analysisDF",".RDS",sep="")))
+animals <- unique(substr(analysisDF$animal,1,3))
+
+cumSumDF <- data.frame()
+for (animal in animals) {
+  animalAnalysisDF <- analysisDF[grepl(paste("^",animal,sep=""),analysisDF$animal),]
+  dffs <- animalAnalysisDF[
+    is.finite(animalAnalysisDF$dff.max) & animalAnalysisDF$background.mean > quantile(animalAnalysisDF$background.mean)["25%"],
+    "dff.max"
+    ]
+  names(dffs) <- rownames(animalAnalysisDF[
+    is.finite(animalAnalysisDF$dff.max) & animalAnalysisDF$background.mean > quantile(animalAnalysisDF$background.mean)["25%"],
+    ])
+  dffs.sort <- sort(dffs)
+  dffs.cumsum <- cumsum(dffs.sort)
+  dffs.cumsum.percent <- dffs.cumsum/(max(dffs.cumsum))
+  dffs.df <- data.frame(sorteddFF=dffs.sort,cumSumPercent=dffs.cumsum.percent)
+  dffs.df$animal <- animal
+  dffs.df$genotype <- unique(as.character(animalAnalysisDF$geno))
+  cumSumDF <- rbind(cumSumDF,dffs.df)
+}
+
+
+ggplot(data=dffs.df,aes(sorteddFF,cumSumPercent)) + 
+  geom_point() + 
+  geom_point(data=dffs.df[findInterval(0.5,dffs.df$cumSumPercent),],color="red",size=2)
+
+ggplot(data=cumSumDF[(cumSumDF$animal!="AAM" |  cumSumDF$animal!="ABJ") &
+                       cumSumDF$genotype!="iGABASnFr" & 
+                       cumSumDF$cumSumPercent>0.45 & 
+                       cumSumDF$cumSumPercent<0.55,],
+       aes(sorteddFF,cumSumPercent)) + 
+  geom_point(aes(color=genotype)) + 
+  xlim(c(0,5)) #+ ylim(c(45,55))
+
+# TODO: maybe get an average for each animal, of each 1 or 10% of the dffs. 
+# See how much that differs at 50% from using the full range of numbers. 
+# Then use that to average across animals per genotype.
+deciles <- quantile(cumSumDF$cumSumPercent,probs = seq(0,1,.1))
+bottom <- cumSumDF[cumSumDF$cumSumPercent>deciles[1] & cumSumDF$cumSumPercent<deciles[2],]
+
+decile <- 0
+percentDF <- data.frame()
+for (animal in animals) {
+  animalAnalysisDF2 <- analysisDF[grepl(paste("^",animal,sep=""),analysisDF$animal),]
+  animalAnalysisDF2 <- animalAnalysisDF2[is.finite(animalAnalysisDF2$dff.max) & 
+                                           animalAnalysisDF2$background.mean > quantile(animalAnalysisDF2$background.mean)["25%"],]
+  percents <- quantile(animalAnalysisDF2$dff.max,probs = seq(0,1,.01),names = FALSE,na.rm = TRUE)
+  percent.cumsum <- cumsum(percents)/max(cumsum(percents))
+  
+
+    
+  tempDF <- data.frame(PercentdFF=percents,
+                       cumsum=percent.cumsum,
+                       percentile=c(0:100),
+                       animal=animal,
+                       genotype=unique(animalAnalysisDF2$geno))
+  percentDF <- rbind(percentDF,tempDF)
+}
+
+genotypes=unique(percentDF$genotype)
+averageDFF <- data.frame()
+for (genotype in genotypes){
+  genos=percentDF[percentDF$genotype==genotype,]
+  animals=as.character(unique(genos$animal))
+  averageDFF.wide <- data.frame(percentile=c(0:100))
+  for (animal in animals) {
+    averageDFF.wide <- cbind(averageDFF.wide,genos[genos$animal==animal,"PercentdFF"])
+    means <- c()
+    SDs <- c()
+    for (row in 1:nrow(averageDFF.wide)) {
+      means <- c(means,mean(unlist(averageDFF.wide[row,c(2:length(averageDFF.wide))])))
+      SDs <- c(SDs,sd(unlist(averageDFF.wide[row,c(2:length(averageDFF.wide))])))
+    }
+    averageDFF.long <- data.frame(percentile=c(0:100),
+                                  means=means,
+                                  SDs=SDs,
+                                  genotype=genotype)
+  }
+  averageDFF <- rbind(averageDFF,averageDFF.long)
+}
+
+
+averageDFF=averageDFF/length(animals)
+
+ggplot(data=percentDF,
+       aes(PercentdFF,cumsum)) + 
+  geom_point(aes(color=genotype))

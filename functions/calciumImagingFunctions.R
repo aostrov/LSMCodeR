@@ -371,6 +371,7 @@ getROIsRawDataFromHDF5.lapply <- function(roiListElement,z=1,hdf5Image.mat,frame
 }
 
 getUsefulStatisticsByROI <- function(rawDataByROI,roiList,analysisWindow=c(900:1500),backgroundWindow=c(750:850)) {
+  
   usefulStatisticsByROI.DF <- data.frame(
     # raw but offset correct background
     background.mean=sapply(rawDataByROI,function(x) mean(x[,,backgroundWindow])),
@@ -406,6 +407,12 @@ getUsefulStatisticsByROI <- function(rawDataByROI,roiList,analysisWindow=c(900:1
       dff[is.nan(dff)]=0
       return(dff)
     }),
+    # dff.sgolay=sgolayfilt(sapply(rawDataByROI, function(x){
+    #   dff <- max(apply(makeDFF(x,backgroundSlices=backgroundWindow,xyzDimOrder=c(1,2,3))[,,analysisWindow],3,mean))
+    #   dff[is.nan(dff)]=0
+    #   dff[is.na(dff)]=0
+    #   return(dff)
+    # }),p=2),
     # X and Y positions
     xpos=sapply(rawDataByROI,function(x) attr(x,"roiAttributes")['xPosition']),
     ypos=sapply(rawDataByROI,function(x) attr(x,"roiAttributes")['yPosition']),
@@ -524,12 +531,13 @@ makeTrial <- function(matFile,stimProtocol="sabineProtocolSimple",analysisWindow
         )$description
         
         backgroundLengthInMilliseconds <- tmpdf[tmpdf$description=="background","time"] # in ms
+        start <- slice.identity[count,"time"] # in frames
         
-        if ( imageDataSlice.dims[['z']] > 1 ) {
-          start <- slice.transitions[count,"time"] # in frames
-        } else {
-          start <- lsm.transition.frames[count]
-        }
+        # if ( imageDataSlice.dims[['z']] > 1 ) {
+        #   start <- slice.identity[count,"time"] # in frames
+        # } else {
+        #   start <- lsm.transition.frames[count]
+        # }
         
         backgroundSlices <- c( 
           start : 
