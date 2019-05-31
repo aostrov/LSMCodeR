@@ -2,7 +2,7 @@
 ## Anatomy take 2 ##
 ####################
 
-anatomyFiles <- dir("/Volumes/home/anatomy",rec=T,patt="[A|a]natomy.mat",full=T)
+anatomyFiles <- dir(imageDir,rec=T,patt="[A|a]natomy.mat",full=T)
 anatomyFiles <- sample(anatomyFiles,length(anatomyFiles))
 
 
