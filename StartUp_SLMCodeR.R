@@ -36,11 +36,13 @@ for (package in 1:length(packages)) {
 # there must be a better way of doing this these days!
 LSMCodeRConfig<-list()
 LSMCodeRConfig$srcdir<-normalizePath(dirname(attr(body(function() {}),'srcfile')$filename))
-LSMCodeRConfig$maindir<-dirname(LSMCodeRConfig$srcdir)
+LSMCodeRConfig$scriptsMain<-file.path(LSMCodeRConfig$srcdir,"scripts_main")
+LSMCodeRConfig$scriptsUtility<-file.path(LSMCodeRConfig$srcdir,"scripts_utility")
+LSMCodeRConfig$functions<-file.path(LSMCodeRConfig$srcdir,"functions")
 LSMCodeRConfig$logDir <- file.path(LSMCodeRConfig$srcdir,"logs")
 LSMCodeRConfig$protocolDir <- file.path(LSMCodeRConfig$srcdir,"protocolCSVs")
 
-source(file.path(LSMCodeRConfig$srcdir,"calciumImagingFunctions.R"))
+source(file.path(LSMCodeRConfig$functions,"calciumImagingFunctions.R"))
 
 protocolList <- list(
   sabineProtocolSimple = list(
