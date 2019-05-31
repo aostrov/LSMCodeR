@@ -15,7 +15,7 @@ for (myFile in myFiles) {
   if (!matFileCode%in%names(stimulusParametersList)){
     # get the transition frames for the mat file
     # parseImageForGreenFlashAndLSMandStimLogs.R uses **myFile** from the global environment
-    source(file.path(LSMCodeRConfig$srcdir,"parseImageForGreenFlashAndLSMandStimLogs.R"))
+    source(file.path(LSMCodeRConfig$scriptsUtility,"parseImageForGreenFlashAndLSMandStimLogs.R"))
     print("Passed parseImageForGreenFlash...")
     print("Setting up the trial information")
     # animal[[basename(myFile)]] <- makeTrial(myFile)

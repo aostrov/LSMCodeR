@@ -58,5 +58,5 @@ endOfFirstGreenFlash <- startOfStimulations + 1
 print(paste("end of first green flash:",endOfFirstGreenFlash))
 
 
-source(file.path(LSMCodeRConfig$srcdir,"stimLogParser.R"))
-source(file.path(LSMCodeRConfig$srcdir,"LSMLogParser.R"))
+source(file.path(LSMCodeRConfig$scriptsUtility,"stimLogParser.R"))
+source(file.path(LSMCodeRConfig$scriptsUtility,"LSMLogParser.R"))

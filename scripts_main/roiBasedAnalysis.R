@@ -21,7 +21,7 @@ if (file.exists(stimParListRDS) & exists("stimulusParametersList")) {
 } else {
   print("There is no stimulusParametersList on disk or in memory.")
   print("Starting stimulusParametersList from scratch.")
-  source(file.path(LSMCodeRConfig$srcdir,"createStimParameterList.R"))
+  source(file.path(LSMCodeRConfig$scriptsUtility,"createStimParameterList.R"))
 }
 
 
