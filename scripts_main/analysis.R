@@ -42,6 +42,9 @@ for (k in 1:length(completedMats.list)){
     analysisDF.animals <- rbind(analysisDF.animals,analysisDF.stimulus)
   }
   analysisDF.animals$animal <- as.factor(animal)
+  analysisDF.animals$date <- fishGenos[k,"Date"]
+  analysisDF.animals$laser <- fishGenos[k,"Laser"]
+  analysisDF.animals$use <- fishGenos[k,"Use"]
   analysisDF <- rbind(analysisDF,analysisDF.animals)
   
 }
@@ -120,7 +123,7 @@ for (animal in animals2){
   if (nrow(tempDF.animals.subset.bestStim)>0) {
     tempSummary=data.frame(dff.mean=mean(tempDF.animals.subset.bestStim$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)]),
                            dff.75quantile=quantile(tempDF.animals.subset$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)])[["75%"]],
-                           dff.2sd=get2SD(),
+                           dff.2sd=get2SD(4),
                            snr.mean=mean(tempDF.animals.subset.bestStim$snr.max[is.finite(tempDF.animals.subset.bestStim$snr.max)]),
                            background.mean=mean(tempDF.animals.subset.bestStim$background.mean[is.finite(tempDF.animals.subset.bestStim$background.mean)]),
                            #animal=unique(tempDF.animals.subset.bestStim$animal),
@@ -134,11 +137,11 @@ for (animal in animals2){
   
 }
 
-get2SD<- function(){
+get2SD<- function(sd.level=2){
   dff.mean <- mean(tempDF.animals.subset.bestStim$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)])
   dff.sd <- sd(tempDF.animals.subset.bestStim$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)])
   if (is.na(dff.sd)) dff.sd <- 0
-  return(dff.mean + 2*dff.sd)
+  return(dff.mean + sd.level*dff.sd)
 }
 
 ggplot(subset(animalSummaryDF2, animalSummaryDF2$animal!="AAM" ),
@@ -147,6 +150,54 @@ ggplot(subset(animalSummaryDF2, animalSummaryDF2$animal!="AAM" ),
   xlab("Genotype") + ylab("DF/F (75th quantile)") + theme(legend.position = "none") + geom_jitter(aes(color=animalKey))
 
 ggplot(countingDF) + geom_histogram(aes(geno),stat="count") + scale_y_continuous(breaks = seq(0, 12))
+
+# This is a bit more straightforward, and it provides what I think is a bit more of a clean
+# analysis by dropping out all ROIs that have no change in fluorescence after stimulus
+# presentation.
+#
+#
+summaryDF.noZeros <- data.frame(dff.mean=double(),
+                                background.mean=double(),
+                                snr.mean=double(),
+                                geno=character(),
+                                animalKey=character()
+)
+
+animals2=unique(substr(unique(analysisDF$animal),1,3))
+
+for (animal in animals2){
+  tempDF.animals <- analysisDF[grepl(paste("^",animal,sep=""),analysisDF$animal),]
+  tempDF.animals.subset <- subset(tempDF.animals,
+                                  background.mean>20 &
+                                    dff.max!=0)
+  if (nrow(tempDF.animals.subset)>0) {
+    tempSummary=data.frame(dff.mean=mean(tempDF.animals.subset$dff.max[is.finite(tempDF.animals.subset$dff.max)]),
+                           background.mean=mean(tempDF.animals.subset$background.mean[is.finite(tempDF.animals.subset$background.mean)]),
+                           snr.mean=mean(tempDF.animals.subset$snr.max[is.finite(tempDF.animals.subset$snr.max)]),
+                           geno=unique(tempDF.animals.subset$geno),
+                           animalKey=animal)
+    
+    summaryDF.noZeros <- rbind(summaryDF.noZeros,tempSummary)
+  }
+  
+}
+ggplot(subset(summaryDF.noZeros, summaryDF.noZeros$animalKey!="AAM" ),
+       aes(geno,snr.mean)) + 
+  geom_boxplot(notch = T) + 
+  geom_point(aes(color=animalKey)) + 
+  theme(legend.position = "none")
+
+# Unfortunately, there doesn't seem to be much of a difference
+pairwise.wilcox.test(x = summaryDF.noZeros$dff.mean, 
+                     g = summaryDF.noZeros$geno, 
+                     p.adjust.method = "bonferroni")
+
+# But we can go p-hunting and get a single significant difference
+# between 7f EF05 and 6s when looking at SNR
+pairwise.wilcox.test(x = summaryDF.noZeros$snr.mean, 
+                     g = summaryDF.noZeros$geno, 
+                     p.adjust.method = "bonferroni")
+
 
 # subset the dataset so that only the top responders are plotted
 zzz=getArbitraryTopROIsPerZ(aaia,threshold = 0.5)

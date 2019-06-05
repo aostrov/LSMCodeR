@@ -234,7 +234,8 @@ percentDF <- data.frame()
 for (animal in animals) {
   animalAnalysisDF2 <- analysisDF[grepl(paste("^",animal,sep=""),analysisDF$animal),]
   animalAnalysisDF2 <- animalAnalysisDF2[is.finite(animalAnalysisDF2$dff.max) & 
-                                           animalAnalysisDF2$background.mean > quantile(animalAnalysisDF2$background.mean)["25%"],]
+                                           animalAnalysisDF2$background.mean > quantile(animalAnalysisDF2$background.mean)["25%"] &
+                                           animalAnalysisDF2$dff.max!=0,]
   percents <- quantile(animalAnalysisDF2$dff.max,probs = seq(0,1,.01),names = FALSE,na.rm = TRUE)
   percent.cumsum <- cumsum(percents)/max(cumsum(percents))
   
@@ -248,7 +249,7 @@ for (animal in animals) {
   percentDF <- rbind(percentDF,tempDF)
 }
 
-genotypes=unique(percentDF$genotype)
+genotypes=as.character(unique(percentDF$genotype))
 averageDFF <- data.frame()
 for (genotype in genotypes){
   genos=percentDF[percentDF$genotype==genotype,]
@@ -271,7 +272,7 @@ for (genotype in genotypes){
 }
 
 
-averageDFF=averageDFF/length(animals)
+# averageDFF=averageDFF/length(animals)
 
 ggplot(data=percentDF,
        aes(PercentdFF,cumsum)) + 

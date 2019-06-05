@@ -1,17 +1,17 @@
-# stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS")
-# stimulusParametersList <- readRDS(file=stimParListRDS)
-# analysisDF <- readRDS(file=file.path(LSMCodeRConfig$srcdir,"objects",paste("analysisDF",".RDS",sep="")))
+stimParListRDS <- file.path(LSMCodeRConfig$srcdir,"objects","stimParListForParallel.RDS")
+stimulusParametersList <- readRDS(file=stimParListRDS)
+analysisDF <- readRDS(file=file.path(LSMCodeRConfig$srcdir,"objects",paste("analysisDF",".RDS",sep="")))
 
 getFramesFromStimParamListFromAnalysisDF <- function(row,file,writeEntireNrrd=T,...) {
   animal <- as.character(analysisDF[row,"animal"])
   print(animal)
-  stim <- analysisDF[row,"stimulus"]
+  stim <- as.character(analysisDF[row,"stimulus"])
   z_plane <- as.integer(sub("z_","",analysisDF[row,"z_plane"]))
   roi <- as.integer(sub("ROI_","",analysisDF[row,"roi"]))
   
   matfile <- dir(imageDir,pattern = paste("^",animal,sep=""),full = T, recursive = T)
   print(matfile)
-  myStim <- stimulusParametersList[[animal]][[grep(stim,names(stimulusParametersList[[animal]]))]]
+  myStim <- stimulusParametersList[[animal]][[grep(paste(stim,"$",sep=""),names(stimulusParametersList[[animal]]))]]
   myROIs <- tectumROIs[tectumROIs$matfile==animal & tectumROIs$z==z_plane,]
   rois <- getROIs(roiEdgeLength = roiEdgeLength,x=myROIs$x,y=myROIs$y,w=myROIs$w,h=myROIs$h)
   
@@ -38,13 +38,13 @@ getFramesFromStimParamListFromAnalysisDF <- function(row,file,writeEntireNrrd=T,
       analysisDF[sampleAnalysisDFRownamesByGenotype(500,genotype = analysisDF[row,"geno"],20,0.75),],
       aes(background.mean,dff.max)
     ) +
-      geom_jitter(aes(color=animal,size=snr.mean),alpha=0.1) +
+      geom_jitter(aes(color=animal),alpha=0.05) +
       facet_wrap(~geno, ncol=3) +
       ylim(c(-1,8)) + xlim(c(-10,320)) + scale_color_viridis_d() +
       geom_point(data=analysisDF[row,], aes(background.mean,dff.max,
-                                                      fill = "black",size = snr.mean)) +
+                                                      color = "red",size = snr.mean)) +
       theme(legend.position = "none")
-    ggsave(paste(file,"ggplot.pdf",sep = "."),width = 5,height = 5,units = "cm")
+    ggsave(paste(file,"ggplot.pdf",sep = "."),width = 7,height = 7,units = "cm")
     
   } else {
     write.nrrd(aperm(imageDataSlice[myStim$start:myStim$end,,z_plane,y_dims,x_dims],c(3,2,1)),file=file,...)
@@ -101,7 +101,7 @@ sampleAnalysisDFRownamesByGenotype <- function(numberOfSamples,genotype,backgrou
                                 analysisDF$dff.max > dffMax,])
   if (numberOfSamples > length(rows)) {
     warning(paste(numberOfSamples," is greater than the number of rows (",length(rows),"). Setting the number of rows to 1/3 of the total rows",sep=""))
-    numberOfSamples <- length(rows)*0.33
+    numberOfSamples <- ceiling(length(rows)*0.33)
   }
   return(sample(rows,numberOfSamples))
 }
@@ -128,8 +128,8 @@ names(examples) <- animals
 # single out that ROI and use it for display purposes
 animalKeyDF <- data.frame()
 for (animalKey in as.character(animalSummaryDF2$animalKey)) {
-  analysisDF.sorted <- sort(analysisDF[grep(animalKey,analysisDF$animal),"dff.max"])
-  analysisDF.sorted <- analysisDF.sorted[-is.infinite(analysisDF.sorted)]
+  analysisDF.sorted <- sort(analysisDF[grep(paste("^",animalKey,sep=""),analysisDF$animal),"dff.max"])
+  analysisDF.sorted <- analysisDF.sorted[is.finite(analysisDF.sorted)]
   ak <- analysisDF[ # I want to pull a full row from analysisDF
     analysisDF$dff.max==analysisDF.sorted[ # I am subsetting by dff.max, and by Animal trial
       findInterval(animalSummaryDF2[animalSummaryDF2$animalKey==animalKey,"dff.2sd"], # find the interval lower bound for the average response
@@ -142,6 +142,16 @@ for (animalKey in as.character(animalSummaryDF2$animalKey)) {
 for (row in rownames(animalKeyDF)) {
   getFramesFromStimParamListFromAnalysisDF(row,
                                            file=file.path("~/Desktop/exampleTraces/",
+                                                          paste(animalKeyDF[row,"animal"],
+                                                                "_",
+                                                                row,
+                                                                "-represenative2sd.nrrd",sep="")))
+  
+}
+
+for (row in rownames(animalKeyDF)) {
+  getFramesFromStimParamListFromAnalysisDF(row,
+                                           file=file.path("C:/Users/Aaron/Desktop/exampleTraces/",
                                                           paste(animalKeyDF[row,"animal"],
                                                                 "_",
                                                                 row,
