@@ -16,24 +16,24 @@ names(fishFullGeno) <- unique(substr(names(completedMats.list),1,3))
 
 
 analysisDF <- c()
-for (k in 1:length(completedMats.list)){
+for (trial in 1:length(completedMats.list)){
   analysisDF.animals <- c()
-  animal <- names(completedMats.list[k])
+  animal <- names(completedMats.list[trial])
   cat("",sep="\n")
   print(paste("animal:",animal))
-  for (j in 1: length(completedMats.list[[k]][[1]])){
+  for (stimRepetition in 1: length(completedMats.list[[trial]][[1]])){
     analysisDF.stimulus <- c()
-    stimulus <- substr(names(completedMats.list[[k]][[1]][j]),
-                       nchar(names(completedMats.list[[k]][[1]][j]))-2,
-                       nchar(names(completedMats.list[[k]][[1]][j])))
+    stimulus <- substr(names(completedMats.list[[trial]][[1]][stimRepetition]),
+                       nchar(names(completedMats.list[[trial]][[1]][stimRepetition]))-2,
+                       nchar(names(completedMats.list[[trial]][[1]][stimRepetition])))
     # print(paste("stimulus:",stimulus))
-    for (i in 1:length(completedMats.list[[k]][[1]][[j]])) {
+    for (z in 1:length(completedMats.list[[trial]][[1]][[stimRepetition]])) {
       analysisDF.zplane <- c()
-      z_plane <- names(completedMats.list[[k]][[1]][[j]][i])
+      z_plane <- names(completedMats.list[[trial]][[1]][[stimRepetition]][z])
       # print(paste("z_plane:",z_plane))
       cat(".")
       analysisDF.zplane <- 
-        completedMats.list[[k]][[1]][[j]][[i]][,c("snr.mean","background.mean","dff.mean","snr.max","dff.max")]
+        completedMats.list[[trial]][[1]][[stimRepetition]][[z]][,c("snr.mean","background.mean","dff.mean","snr.max","dff.max")]
       analysisDF.zplane$z_plane <- as.factor(z_plane)
       analysisDF.zplane$roi <- row.names(analysisDF.zplane)
       analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
@@ -42,9 +42,9 @@ for (k in 1:length(completedMats.list)){
     analysisDF.animals <- rbind(analysisDF.animals,analysisDF.stimulus)
   }
   analysisDF.animals$animal <- as.factor(animal)
-  analysisDF.animals$date <- fishGenos[k,"Date"]
-  analysisDF.animals$laser <- fishGenos[k,"Laser"]
-  analysisDF.animals$use <- fishGenos[k,"Use"]
+  analysisDF.animals$date <- fishGenos[trial,"Date"]
+  analysisDF.animals$laser <- fishGenos[trial,"Laser"]
+  analysisDF.animals$use <- fishGenos[trial,"Use"]
   analysisDF <- rbind(analysisDF,analysisDF.animals)
   
 }
@@ -160,6 +160,7 @@ summaryDF.noZeros <- data.frame(dff.mean=double(),
                                 background.mean=double(),
                                 snr.mean=double(),
                                 geno=character(),
+                                date=character(),
                                 animalKey=character()
 )
 
@@ -170,21 +171,27 @@ for (animal in animals2){
   tempDF.animals.subset <- subset(tempDF.animals,
                                   background.mean>20 &
                                     dff.max!=0)
+  
+  print(paste(animal,unique(as.Date(tempDF.animals.subset$date,format='%d.%m.%Y'))))
+  
   if (nrow(tempDF.animals.subset)>0) {
     tempSummary=data.frame(dff.mean=mean(tempDF.animals.subset$dff.max[is.finite(tempDF.animals.subset$dff.max)]),
                            background.mean=mean(tempDF.animals.subset$background.mean[is.finite(tempDF.animals.subset$background.mean)]),
                            snr.mean=mean(tempDF.animals.subset$snr.max[is.finite(tempDF.animals.subset$snr.max)]),
                            geno=unique(tempDF.animals.subset$geno),
+                           date=unique(tempDF.animals.subset$date),
                            animalKey=animal)
     
     summaryDF.noZeros <- rbind(summaryDF.noZeros,tempSummary)
   }
   
 }
-ggplot(subset(summaryDF.noZeros, summaryDF.noZeros$animalKey!="AAM" ),
-       aes(geno,snr.mean)) + 
-  geom_boxplot(notch = T) + 
+
+ggplot(subset(summaryDF.noZeros, summaryDF.noZeros$animalKey!="AAM" & geno!="iGABASnFr"),
+       aes(geno,dff.mean)) + 
+  geom_boxplot(notch = F) + 
   geom_point(aes(color=animalKey)) + 
+  facet_wrap(~date) +
   theme(legend.position = "none")
 
 # Unfortunately, there doesn't seem to be much of a difference

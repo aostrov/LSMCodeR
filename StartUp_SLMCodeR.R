@@ -80,3 +80,4 @@ roiEdgeLength <- 26
 ######################
 tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
 fishGenos <- read.csv(file.path(LSMCodeRConfig$srcdir,"models","DSLM-fish.csv"))
+fishGenos$Date <- as.Date(fishGenos$Date,format='%d.%m.%Y')
