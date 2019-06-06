@@ -1,3 +1,18 @@
+## Functions ##
+
+get2SD<- function(sd.level=2){
+  dff.mean <- mean(tempDF.animals.subset.bestStim$dff.max[
+    is.finite(tempDF.animals.subset.bestStim$dff.max)
+    ])
+  dff.sd <- sd(tempDF.animals.subset.bestStim$dff.max[
+    is.finite(tempDF.animals.subset.bestStim$dff.max)
+    ])
+  if (is.na(dff.sd)) dff.sd <- 0
+  return(dff.mean + sd.level*dff.sd)
+}
+
+## Setup ##
+
 completedMats <- dir(file.path(LSMCodeRConfig$srcdir,"objects"),patt=".mat",full=T)
 
 completedMats.list <- list()
@@ -33,7 +48,11 @@ for (trial in 1:length(completedMats.list)){
       # print(paste("z_plane:",z_plane))
       cat(".")
       analysisDF.zplane <- 
-        completedMats.list[[trial]][[1]][[stimRepetition]][[z]][,c("snr.mean","background.mean","dff.mean","snr.max","dff.max")]
+        completedMats.list[[trial]][[1]][[stimRepetition]][[z]][,c("snr.mean",
+                                                                   "background.mean",
+                                                                   "dff.mean",
+                                                                   "snr.max",
+                                                                   "dff.max")]
       analysisDF.zplane$z_plane <- as.factor(z_plane)
       analysisDF.zplane$roi <- row.names(analysisDF.zplane)
       analysisDF.stimulus <- rbind(analysisDF.stimulus,analysisDF.zplane)
@@ -42,7 +61,7 @@ for (trial in 1:length(completedMats.list)){
     analysisDF.animals <- rbind(analysisDF.animals,analysisDF.stimulus)
   }
   analysisDF.animals$animal <- as.factor(animal)
-  analysisDF.animals$date <- fishGenos[trial,"Date"]
+  # analysisDF.animals$date <- fishGenos[trial,"Date"]
   analysisDF.animals$laser <- fishGenos[trial,"Laser"]
   analysisDF.animals$use <- fishGenos[trial,"Use"]
   analysisDF <- rbind(analysisDF,analysisDF.animals)
@@ -50,9 +69,11 @@ for (trial in 1:length(completedMats.list)){
 }
 
 
-for (fish in 1:length(fishFullGeno)) {
-  analysisDF$geno[substr(analysisDF$animal,1,3)==names(fishFullGeno[fish])] <- fishFullGeno[fish]
+for (fish in names(fishFullGeno)) {
+  analysisDF$geno[substr(analysisDF$animal,1,3)==fish] <- fishFullGeno[fish]
+  analysisDF$date[grepl(paste("^",fish,sep=""),analysisDF$animal)] <- unique(fishGenos[fishGenos$Fish==fish,"Date"])
 }
+
 analysisDF$geno <- as.factor(analysisDF$geno)
 saveRDS(analysisDF,file=file.path(LSMCodeRConfig$srcdir,"objects",paste("analysisDF",".RDS",sep="")))
 
@@ -80,74 +101,13 @@ ggplot(subset(analysisDF,
 
 ggplot(analysisDF) + geom_histogram(aes(geno),stat="count")
 
-# Set things up to get average data by animal
-animalSummaryDF2 <- data.frame(dff.mean=double(),
-                               dff.75quantile=double(),
-                               dff.2sd=double(),
-                               snr.mean=double(),
-                               background.mean=double(),
-                               #animal=character(),
-                               geno=character(),
-                               animalKey=character(),
-                               bestStim=character())
 
-countingDF <- data.frame(animal=character(),
-                         geno=character())
-
-animals2=unique(substr(unique(analysisDF$animal),1,3))
-
-for (animal in animals2){
-  tempDF.animals <- analysisDF[grepl(paste("^",animal,sep=""),analysisDF$animal),]
-  tempDF.animals.subset <- subset(tempDF.animals,
-                                  background.mean>50 &
-                                    background.mean<400)
-  # stimuls.block
-  # get block 1
-  block1 <- tempDF.animals.subset[grepl("[1-4].1",tempDF.animals.subset$stimulus),]
-  block1.sub <- subset(block1,
-                       background.mean>10 &
-                         background.mean<400)
-  stims <- unique(block1.sub$stimulus)
-  response=0
-  bestResponse=character()
-  for (stim in stims){
-    x=block1.sub[block1.sub$stimulus==stim,"dff.max"]
-    if (mean(x)>response) {
-      response = mean(x)
-      bestResponse = stim
-    }
-  }
-  
-  tempDF.animals.subset.bestStim <- subset(tempDF.animals.subset, stimulus==bestResponse)
-  
-  if (nrow(tempDF.animals.subset.bestStim)>0) {
-    tempSummary=data.frame(dff.mean=mean(tempDF.animals.subset.bestStim$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)]),
-                           dff.75quantile=quantile(tempDF.animals.subset$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)])[["75%"]],
-                           dff.2sd=get2SD(4),
-                           snr.mean=mean(tempDF.animals.subset.bestStim$snr.max[is.finite(tempDF.animals.subset.bestStim$snr.max)]),
-                           background.mean=mean(tempDF.animals.subset.bestStim$background.mean[is.finite(tempDF.animals.subset.bestStim$background.mean)]),
-                           #animal=unique(tempDF.animals.subset.bestStim$animal),
-                           geno=unique(tempDF.animals.subset.bestStim$geno),
-                           animalKey=animal,
-                           bestStim=bestResponse)
-    
-    animalSummaryDF2 <- rbind(animalSummaryDF2,tempSummary)
-    countingDF <- rbind(countingDF,data.frame(animal=animal,geno=unique(animalSummaryDF2[animalSummaryDF2$animalKey==animal,"geno"])))
-  }
-  
-}
-
-get2SD<- function(sd.level=2){
-  dff.mean <- mean(tempDF.animals.subset.bestStim$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)])
-  dff.sd <- sd(tempDF.animals.subset.bestStim$dff.max[is.finite(tempDF.animals.subset.bestStim$dff.max)])
-  if (is.na(dff.sd)) dff.sd <- 0
-  return(dff.mean + sd.level*dff.sd)
-}
 
 ggplot(subset(animalSummaryDF2, animalSummaryDF2$animal!="AAM" ),
        aes(geno,dff.75quantile)) + 
   geom_boxplot(notch = F) +
-  xlab("Genotype") + ylab("DF/F (75th quantile)") + theme(legend.position = "none") + geom_jitter(aes(color=animalKey))
+  xlab("Genotype") + ylab("DF/F (75th quantile)") + 
+  theme(legend.position = "none") + geom_jitter(aes(color=animalKey))
 
 ggplot(countingDF) + geom_histogram(aes(geno),stat="count") + scale_y_continuous(breaks = seq(0, 12))
 
@@ -172,9 +132,10 @@ for (animal in animals2){
                                   background.mean>20 &
                                     dff.max!=0)
   
-  print(paste(animal,unique(as.Date(tempDF.animals.subset$date,format='%d.%m.%Y'))))
+  
   
   if (nrow(tempDF.animals.subset)>0) {
+    print(paste(animal,unique(tempDF.animals.subset$date)))
     tempSummary=data.frame(dff.mean=mean(tempDF.animals.subset$dff.max[is.finite(tempDF.animals.subset$dff.max)]),
                            background.mean=mean(tempDF.animals.subset$background.mean[is.finite(tempDF.animals.subset$background.mean)]),
                            snr.mean=mean(tempDF.animals.subset$snr.max[is.finite(tempDF.animals.subset$snr.max)]),
@@ -209,6 +170,7 @@ pairwise.wilcox.test(x = summaryDF.noZeros$snr.mean,
 # subset the dataset so that only the top responders are plotted
 zzz=getArbitraryTopROIsPerZ(aaia,threshold = 0.5)
 zz=topRespondersDF(zzz)
-ggplot(subset(analysisDF.subset,animal=="AAIA" & z_plane%in%unique(zz$z) & roi%in%zz$roi),aes(background.mean,dff.max)) + 
+ggplot(subset(analysisDF.subset,animal=="AAIA" & z_plane%in%unique(zz$z) & roi%in%zz$roi),
+       aes(background.mean,dff.max)) + 
   geom_jitter(aes(color=z_plane)) + facet_wrap(~stimulus, ncol=4)
 
