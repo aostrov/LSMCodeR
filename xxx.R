@@ -1,3 +1,28 @@
+
+
+prepForDisplay <- function(image,z,t,verbose=FALSE) {
+  file.h5 <- H5File$new(file.path(imageDir,image), mode = "r+")
+  imageDataSlice<-file.h5[["imagedata"]]
+  on.exit(file.h5$close_all())
+  on.exit(imageDataSlice$close(),add=T)
+  test.matrix <- makeDFF(aperm((imageDataSlice[c(1:120),,z,,] - 399),c(3,2,1)),
+                         backgroundSlices = c(20:40),
+                         xyzDimOrder = c(1,2,3),verbose = verbose)
+  test.matrix.melt <- melt(data = test.matrix)
+  names(test.matrix.melt) <- c("x","y","t","dff")
+  temp <- test.matrix.melt[test.matrix.melt$t==t,]
+  temp[is.infinite(temp$dff)| is.na(temp$dff),"dff"] <- 0
+  temp[temp$dff<quantile(temp$dff,na.rm=TRUE,probs = seq(0,1,0.25))["25%"] | 
+         temp$dff>quantile(temp$dff,na.rm=TRUE,probs = seq(0,1,0.25))["75%"],"dff"] <- 0
+  return(temp)
+}
+
+ggplot(prepForDisplay("/AAFA-gen-A-laser3-SabineSimple/AAFA-gen-A-laser3-SabineSimple.mat",z=6,t=95),
+       aes(x,y,fill=dff)) + 
+  geom_raster(interpolate = F) + 
+  scale_fill_gradientn(colors = viridis(6)) +
+  coord_fixed() + scale_y_reverse()
+
 ##############
 ## Analysis ##
 ##############
