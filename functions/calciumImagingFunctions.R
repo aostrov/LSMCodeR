@@ -440,14 +440,16 @@ roundToNearestDivisibleInteger <- function(numerator,divisor,roundUp=FALSE){
 
 
 
-makeDFF<-function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1)){
+makeDFF<-function(imageStack,backgroundSlices=c(50:101),xyzDimOrder=c(3,2,1),verbose=F){
   # establish what the actual dimensions are of the image in X, Y, and Z
   zdim<-dim(imageStack)[xyzDimOrder[3]]
   xdim<-dim(imageStack)[xyzDimOrder[1]]
   ydim<-dim(imageStack)[xyzDimOrder[2]]
 
+  if (verbose) print(paste("dims:",dim(imageStack)))
   # get background
   testSliceBackground<-apply(imageStack[,,backgroundSlices],c(xyzDimOrder[1],xyzDimOrder[2]),mean)
+  if (verbose) print(str(testSliceBackground))
   
   # subtract background
   testSliceBackgroundSubtract<-apply(imageStack[,,],3,function(x) x-testSliceBackground)

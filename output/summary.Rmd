@@ -48,6 +48,7 @@ if (dir.exists("F:\\Imaging\\GCaMP7_tests\\20181204-g7")) {
 
 tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
 
+genotypeOrder <- c("6s","6f EF05","7f","7f EF05","7b","7b EF05")
 ```
 
 
@@ -109,6 +110,7 @@ if ( length(unique(as.character(analysisDF$animal))) != length(completedMats.lis
     analysisDF.animals$use <- fishGenos[k,"Use"]
     analysisDF <- rbind(analysisDF,analysisDF.animals)
   }
+  saveRDS(analysisDF,file=file.path(LSMCodeRConfig$srcdir,"objects",paste("analysisDF",".RDS",sep="")))
 }
 
 
@@ -168,12 +170,14 @@ summaryDF.noZeros <- subset(summaryDF.noZeros,animalKey!="AAM" & geno!="iGABASnF
 ```{r plots}
 ggplot(data = subset(countingDF,geno!="iGABASnFr")) + 
   geom_histogram(aes(geno),stat="count") + 
-  scale_y_continuous(breaks = seq(0, 20))
+  scale_y_continuous(breaks = seq(0, 20)) +
+  scale_x_discrete(limits=genotypeOrder)
 
 ggplot(summaryDF.noZeros,
        aes(geno,dff.mean)) + 
   geom_boxplot(notch = F) +
-  geom_jitter(aes(color=animalKey))
+  geom_jitter(aes(color=animalKey)) + scale_colour_viridis_d(option="D",aesthetics = "colour") +
+  scale_x_discrete(limits=genotypeOrder)
 
 pairwise.wilcox.test(x = summaryDF.noZeros$dff.mean, 
                      g = summaryDF.noZeros$geno, 
@@ -182,7 +186,8 @@ pairwise.wilcox.test(x = summaryDF.noZeros$dff.mean,
 ggplot(summaryDF.noZeros,
        aes(geno,snr.mean)) + 
   geom_boxplot(notch = F) +
-  geom_jitter(aes(color=animalKey))
+  geom_jitter(aes(color=animalKey)) + scale_colour_viridis_d(option="C",aesthetics = "colour") +
+  scale_x_discrete(limits=genotypeOrder)
 
 pairwise.wilcox.test(x = summaryDF.noZeros$snr.mean, 
                      g = summaryDF.noZeros$geno, 
@@ -242,7 +247,7 @@ ggplot(data=averageDFF[averageDFF$genotype!="iGABASnFr",],
        aes(x=means,y=percentile)) + 
   geom_point(aes(color=genotype)) + 
   xlim(c(0,5)) +
-  xlab("Average dF/F") + ylab("Normalized Percentage of Maximum dF/F")
+  xlab("Average dF/F") + ylab("Normalized Percentage of Maximum dF/F") 
 
 ```
 
@@ -299,8 +304,9 @@ ggplot(data=averageSNR[averageSNR$genotype!="iGABASnFr",],
   xlab("Average SNR") + ylab("Normalized Percentage of Maximum SNR")
 ```
 
+Controls 
+=== 
 
-=== Controls === 
 ```{r LAZERS!}
 tempDF.animals <- analysisDF[grepl(paste("^","AAB",sep=""),analysisDF$animal),]
 ggplot(data = tempDF.animals,aes(background.mean,dff.max)) + geom_jitter(aes(color=as.factor(laser))) +
@@ -348,7 +354,15 @@ ggplot(subset(summaryDF.noZeros, summaryDF.noZeros$animalKey!="AAM" & geno!="iGA
   geom_boxplot(notch = F) + 
   geom_point(aes(color=animalKey)) + 
   facet_wrap(~date) +
-  theme(legend.position = "none")
+  theme(legend.position = "none", axis.text.x = element_text(angle = 60, hjust = 1) ) +
+  scale_x_discrete(limits=genotypeOrder)
+
+ggplot(summaryDF.noZeros,
+       aes(geno,dff.mean)) + 
+  geom_boxplot(notch = F) +
+  geom_jitter(aes(color=date)) +
+  scale_x_discrete(limits=genotypeOrder)
+
 
 ```
 
