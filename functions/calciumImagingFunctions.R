@@ -640,12 +640,19 @@ writeNrrdForROISelection <- function(matFile,outPath,testTime=100,numZSlices=20,
   names(imageDataSlice.dims) <- c('t','c','z','y','x')
   animal <- substr(basename(matFile),1,4)
   count=1
+  image=c()
   for (i in 1:imageDataSlice.dims[['z']]){
-    write.nrrd(aperm(imageDataSlice[testTime,,i,,],c(2,1)),
-               file=file.path(outPath,paste(animal,"_roiSelection-",i,".nrrd",sep="")),
-               dtype = bitDepth)
-    count=count+1
+    image=c(image,aperm(imageDataSlice[testTime,,i,,],c(2,1)))
+    # write.nrrd(aperm(imageDataSlice[testTime,,i,,],c(2,1)),
+    #            file=file.path(outPath,paste(animal,"_roiSelection-",i,".nrrd",sep="")),
+    #            dtype = bitDepth)
+    # count=count+1
   }
+  dim(image) <- c(imageDataSlice.dims[['x']],imageDataSlice.dims[['y']],imageDataSlice.dims[['z']])
+  write.nrrd(image,
+             file=file.path(outPath,paste(animal,"testTime-",testTime,"_allSlices.nrrd",sep="")),
+             dtype = bitDepth)
+  
   imageDataSlice$close()
   file.h5$close_all()
 }
