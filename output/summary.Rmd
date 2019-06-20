@@ -47,6 +47,8 @@ if (dir.exists("F:\\Imaging\\GCaMP7_tests\\20181204-g7")) {
 }
 
 tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
+fishGenos <- read.csv(file.path(LSMCodeRConfig$srcdir,"models","DSLM-fish.csv"))
+fishGenos$Date <- as.character(as.Date(fishGenos$Date,format='%d.%m.%Y'))
 
 genotypeOrder <- c("6s","6f EF05","7f","7f EF05","7b","7b EF05")
 ```
@@ -304,6 +306,17 @@ ggplot(data=averageSNR[averageSNR$genotype!="iGABASnFr",],
   xlab("Average SNR") + ylab("Normalized Percentage of Maximum SNR")
 ```
 
+
+```{r averageTraces}
+animalAverageTraces <- readRDS(file=file.path(LSMCodeRConfig$srcdir,"objects","animalAverageTraces.RDS"))
+animalAverageTraces$genotype <- factor(animalAverageTraces$genotype,levels = genotypeOrder)
+
+ggplot(data=animalAverageTraces,aes(x = time,y = trailAverage)) + geom_smooth(aes(color=animalTrial)) + geom_smooth(color="black",lwd=1.3) + theme(legend.position = "none") + facet_wrap(~genotype,ncol=2)
+
+ggplot(data=animalAverageTraces,aes(x = time,y = trailAverage)) + geom_smooth(aes(color=genotype))
+```
+
+
 Controls 
 === 
 
@@ -347,6 +360,7 @@ for (animal in animals2){
 }
 
 ```
+
 
 ```{r plot by date}
 ggplot(subset(summaryDF.noZeros, summaryDF.noZeros$animalKey!="AAM" & geno!="iGABASnFr"),
