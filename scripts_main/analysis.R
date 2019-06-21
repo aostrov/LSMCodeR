@@ -14,9 +14,10 @@ get2SD<- function(sd.level=2){
 ## Setup ##
 
 completedMats <- dir(file.path(LSMCodeRConfig$srcdir,"objects"),patt=".mat",full=T)
+completedMats.clean <- completedMats[!substr(basename(completedMats),1,3)%in%fishGenos$Fish[fishGenos$Use=="No"]]
 
 completedMats.list <- list()
-for (mats in completedMats) {
+for (mats in completedMats.clean) {
   # print(substr(basename(mats),1,4))
   # print(names(readRDS(mats)))
   completedMats.list[[substr(basename(mats),1,4)]] <- readRDS(mats)
