@@ -151,3 +151,17 @@ for (x in animals.clean) {
 attr(notAbove_sdThreshold,"sdThreshold") <- sdThreshold
 attr(notAbove_dFF_threshold,"dFF_Threshold") <- dffThreshold
 saveRDS(animalAverageDF,file=file.path(LSMCodeRConfig$srcdir,"objects","animalAverageTraces.RDS"))
+
+newDF.big <- data.frame()
+for (j in unique(substring(animalAverageDF.raw$animalTrial,1,3))){
+  byAnimal=animalAverageDF.raw[grepl(paste("^",j,sep=""),animalAverageDF.raw$animalTrial),]
+  newDF <- data.frame()
+  for (i in seq(0,6,0.2)){
+    newDF <- rbind(newDF,data.frame(average=mean(byAnimal[as.character(byAnimal$time)==as.character(i),"trailAverage"]),time=i))
+    
+  }
+  newDF$genotype <- unique(byAnimal$genotype)
+  newDF$animal <- j
+  newDF.big <- rbind(newDF.big,newDF)
+}
+saveRDS(newDF.big,file=file.path(LSMCodeRConfig$srcdir,"objects","animalAverageTracesByAnimalNotROI.RDS"))
