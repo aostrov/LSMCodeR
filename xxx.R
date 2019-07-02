@@ -205,3 +205,82 @@ for (genotype in genotypes){
 ggplot(data=percentDF,
        aes(PercentdFF,cumsum)) + 
   geom_point(aes(color=genotype))
+
+## Time Series Nonsense ##
+
+xx=readRDS("/Users/aostrov/projects/R/OrgerLab/LSMCodeR/toDiscardEventually/AAFA-gen-A-laser3-SabineSimple.mat.1.1.RDS")
+ts.test <- xx[[1]][[1]]$signal
+plot(ts(ts.test))
+
+testData <- subset(df3,X.5>0.2)
+maxInstantaneousDerivative <- c()
+for (i in 1:nrow(testData)) {
+  maxInstantaneousDerivative <- c(maxInstantaneousDerivative,
+                                  which.max(diff(unlist(c(testData[i,grepl(x = colnames(df3),pattern = "^X")])))))
+}
+testData$maxDiff=maxInstantaneousDerivative
+
+zByColor <- data.frame(maxDiff=unique(testData$maxDiff),color=viridis(length(unique(testData$maxDiff))))
+
+plot(x=seq(0,6,0.2),
+     y = testData[1,grepl(x = colnames(testData),pattern = "^X")],
+     type = "l",ylim=c(-0.05,max(testData[,6:18])),
+     col=zByColor[testData$maxDiff[1],"color"])
+
+for (j in 2:nrow(testData)){
+  lines(x=seq(0,6,0.2),y=testData[j,grepl(x = colnames(testData),pattern = "^X")],col=as.character(zByColor[testData$maxDiff[j],"color"]))
+}
+
+
+
+plot(x=seq(0,6,0.2),
+     y = testData[1,grepl(x = colnames(testData),pattern = "^X")],
+     type = "l",ylim=c(-0.05:max(testData[,6:18])))
+
+for (j in 1:nrow(testData)){
+  lines(x=seq(0,6,0.2),y=subset(testData,maxDiff==3)[j,grepl(x = colnames(testData),pattern = "^X")])
+}
+
+for (something in zByColor$maxDiff) {
+  xxx <- subset(testData,maxDiff==something)
+  plot(x=seq(0,6,0.2),
+       y = (xxx[1,grepl(x = colnames(testData),pattern = "^X")] / 
+              max(xxx[1,grepl(x = colnames(testData),pattern = "^X")])),
+       type = "l",ylim = c(-0.1,1.1),
+       xlab = "Seconds", ylab = "Normalized dFF",main = paste("maxDiff of", something))
+  
+  for (j in 1:nrow(xxx)){
+    lines(x=seq(0,6,0.2),
+          y=xxx[j,grepl(x = colnames(testData),pattern = "^X")] / 
+            max(xxx[j,grepl(x = colnames(testData),pattern = "^X")]),
+          col=as.character(zByColor[xxx$maxDiff[j],"color"]))
+  }
+  
+  
+}
+
+
+testdata.melt <- melt(testData,id.vars = c("z","roi","maxDiff"),measure.vars = grep(x = colnames(testData),pattern = "^X"))
+
+# aligning the peaks of different traces
+
+# reference nrrd
+fixed=write.nrrd(x = as.matrix(testData[61, grepl(x = colnames(testData),pattern = "^X")]) , file = "~/Desktop/tmp/referenceTrace_61.nrrd")
+# unlink(fixed)
+registeredDF <- data.frame()
+for (i in 1:nrow(df3)) {
+  moving=write.nrrd(x = as.matrix(testData[i, grepl(x = colnames(testData),pattern = "^X")]) , 
+                    file = "~/Desktop/tmp/moving.nrrd")
+  print(paste("working on row",i))
+  system("sh ~/Desktop/2dReg-test.sh",ignore.stdout = TRUE)
+  registered=c(read.nrrd(file="~/Desktop/tmp/moving.nrrd"))
+  registeredDF <- rbind(registeredDF,registered)
+}
+
+plot(x=seq(0,6,0.2),
+     y = registeredDF[1,],
+     type = "l",ylim=c(-0.05,max(registeredDF[,6:18])))
+
+for (j in 2:nrow(testData)){
+  lines(x=seq(0,6,0.2),y=registeredDF[j,])
+}

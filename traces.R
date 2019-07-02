@@ -113,7 +113,9 @@ for (x in animals.clean) {
       
       # raw
       trialAverage.raw <- as.numeric(colMeans(df3.raw[,grepl("X",colnames(df3.raw))]))
-      trialAverageDF.raw <- data.frame(trailAverage=trialAverage.raw,animalTrial=unique(df3.raw$animalTrial),stimBlock=unique(df3.raw$stimBlock))
+      trialAverageDF.raw <- data.frame(trailAverage=trialAverage.raw,
+                                       animalTrial=unique(df3.raw$animalTrial),
+                                       stimBlock=unique(df3.raw$stimBlock))
       trialAverageDF.raw$time <- (as.numeric(row.names(trialAverageDF.raw))/5 - 0.2) # let's assume this is true
       trialAverageDF.raw$genotype <- genotype
       animalAverageDF.raw <- rbind(animalAverageDF.raw,trialAverageDF.raw)
