@@ -318,6 +318,13 @@ animalAverageTraces$genotype <- factor(animalAverageTraces$genotype,levels = gen
 ggplot(data=animalAverageTraces,aes(x = time,y = trailAverage)) + geom_smooth(aes(color=animalTrial)) + geom_smooth(color="black",lwd=1.3) + theme(legend.position = "none") + facet_wrap(~genotype,ncol=2)
 
 ggplot(data=animalAverageTraces,aes(x = time,y = trailAverage)) + geom_smooth(aes(color=genotype))
+
+animalAverageTracesByAnimalNotROI <- readRDS(file=file.path(LSMCodeRConfig$srcdir,
+                                                            "objects","animalAverageTracesByAnimalNotROI.RDS")
+                                             )
+animalAverageTracesByAnimalNotROI$genotype <- factor(animalAverageTracesByAnimalNotROI$genotype,levels = genotypeOrder)
+ggplot(data=newDF.big,aes(x=time,y=average)) + geom_smooth(aes(color=genotype)) + xlab("Time (seconds)") + ylab("dF/F")
+
 ```
 
 
