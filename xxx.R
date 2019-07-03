@@ -265,15 +265,40 @@ testdata.melt <- melt(testData,id.vars = c("z","roi","maxDiff"),measure.vars = g
 # aligning the peaks of different traces
 
 # reference nrrd
+
+rigidAlignment <- function(df,subsetByThreshold=T,threshold=0.2,outDir="~/Desktop/tmp/",refRow=61){
+  if (subsetByThreshold){
+    df <- subset(df,X.5>0.2)
+  }
+  fixed=write.nrrd(x = as.matrix(df[refRow, grepl(x = colnames(df),pattern = "^X")]) , 
+                   file = file.path(outDir,"referenceTrace_61.nrrd"))
+  # unlink(fixed)
+  registeredDF <- data.frame()
+  for (i in 1:nrow(df)) { 
+    moving=write.nrrd(x = as.matrix(df[i, grepl(x = colnames(df),pattern = "^X")]) , 
+                      file = file.path(outDir,"moving.nrrd"))
+    print(paste("working on row",i))
+    system("sh ~/Desktop/2dReg-test.sh",ignore.stdout = TRUE)
+    registered=c(read.nrrd(file=file.path(outDir,"reformatted.nrrd")))
+    registeredDF <- rbind(registeredDF,registered)
+  }
+  return(registeredDF)
+  
+}
+
+
+testData <- subset(df3,X.5>0.2)
+
 fixed=write.nrrd(x = as.matrix(testData[61, grepl(x = colnames(testData),pattern = "^X")]) , file = "~/Desktop/tmp/referenceTrace_61.nrrd")
 # unlink(fixed)
+
 registeredDF <- data.frame()
-for (i in 1:nrow(df3)) {
+for (i in 1:nrow(testData)) { #1:nrow(df3)
   moving=write.nrrd(x = as.matrix(testData[i, grepl(x = colnames(testData),pattern = "^X")]) , 
                     file = "~/Desktop/tmp/moving.nrrd")
   print(paste("working on row",i))
   system("sh ~/Desktop/2dReg-test.sh",ignore.stdout = TRUE)
-  registered=c(read.nrrd(file="~/Desktop/tmp/moving.nrrd"))
+  registered=c(read.nrrd(file="~/Desktop/tmp/reformatted.nrrd"))
   registeredDF <- rbind(registeredDF,registered)
 }
 
@@ -283,4 +308,27 @@ plot(x=seq(0,6,0.2),
 
 for (j in 2:nrow(testData)){
   lines(x=seq(0,6,0.2),y=registeredDF[j,])
+}
+lines(x=seq(0,6,0.2),y=colMeans(registeredDF),col="green",lwd=2)
+lines(x=seq(0,6,0.2),y=colMeans(testData[,grepl("X",colnames(testData))]),col="magenta",lwd=2)
+
+
+
+plot(x=seq(0,6,0.2),y=colMeans(registeredDF),col="green", ylab = "dF/F", xlab = "Seconds", main = "Comparison of average traces before and after rigid alignment", type = "l")
+
+# try some groupwise averages to get a better fixed image...
+testdata.sample <- sample.dataframe(testData,50)
+for (nrrd in 1:nrow(testdata.sample)){
+  write.nrrd(x = as.matrix(testdata.sample[nrrd, 
+                                           grepl(x = colnames(testdata.sample),
+                                                 pattern = "^X")
+                                           ]), 
+             file = paste("~/Desktop/tmp/forTemplate_",nrrd,".nrrd",sep=""))
+  
+}
+plot(x=seq(0,6,0.2),
+      y=c(read.nrrd("/Users/aostrov/Desktop/tmp/reformatted_template0.nii-1.nrrd")),
+      col="green")
+for (j in 1:nrow(testdata.sample)){
+  lines( x=seq(0,6,0.2),y=testdata.sample[j,grepl("X",colnames(testdata.sample))] ) 
 }

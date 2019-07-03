@@ -1,3 +1,14 @@
+# Basic R utilities
+
+sample.dataframe <- function(df,numberOfSamples,replace=F, ...){
+  if (numberOfSamples > nrow(df)) {
+    stop(paste("Number of samples (",numberOfSamples,") is greater than rows of the dataframe, (",nrow(df),").",sep=""))
+  }
+  x <- sample(x = c(1:nrow(df)), size = numberOfSamples, replace = replace, ...)
+  return(df[x,])
+}
+
+
 # Basic functions for dealing with microscopy data
 
 readLogFileData<-function(logFile){
