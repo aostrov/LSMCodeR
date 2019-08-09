@@ -332,3 +332,178 @@ plot(x=seq(0,6,0.2),
 for (j in 1:nrow(testdata.sample)){
   lines( x=seq(0,6,0.2),y=testdata.sample[j,grepl("X",colnames(testdata.sample))] ) 
 }
+
+# get a random subset of traces from each genotype and try to make an average based
+# on this
+getGenotypes <- function(fishDF,exclude=c("iGABASnFr")){
+  fishDF <- fishDF[fishDF$Use=="Yes" & !fishDF$Full_geno%in%exclude,]
+  genos <- unique(fishDF$Full_geno)
+  return(as.character(genos))
+}
+
+getAnimalRoot <- function(fishDF,exclude=c("iGABASnFr")) {
+  fishDF <- fishDF[fishDF$Use=="Yes" & !fishDF$Full_geno%in%exclude,]
+  fish <- unique(fishDF$Fish)
+  return(as.character(fish))
+}
+
+numberOfExamplesPerGenotype <- 10
+for (geno in getGenotypes(fishGenos)) {
+  animalXGenotype <- getAnimalRoot(fishGenos[fishGenos$Full_geno==geno,])
+  print(geno)
+}
+
+###########################################
+## Cross Correllation and other nonsense ##
+###########################################
+
+# Get a stimulus presentation
+aaaa <- readRDS(animals.clean[1])
+signal50=aaaa[[1]]$ROI_50$sgolaySignal # ROI 50
+signal55=aaaa[[1]]$ROI_55$sgolaySignal # ROI 55
+
+# convert traces to the fourier space
+fft50 <- fft(signal)
+fft55 <- fft(signal55)
+
+u=fft50*Conj(fft55)
+xcor=abs(ifft(u))
+
+
+nrrds <- dir("/Users/aostrov/Desktop/tmp",patt="forTemplate",full=T)
+forTemplate <- sample(nrrds,size = 45,replace = F)
+avg=c(rep(0,31))
+for (i in forTemplate) {
+  avg = avg+as.numeric(read.nrrd(i))
+  print(avg)
+}
+avg=avg/length(forTemplate)
+# dim(avg) <- c(1,31)
+# write.nrrd(avg,file="~/Desktop/avg.nrrd")
+
+avg2=c(rep(0,31))
+plot(as.numeric(avg),type="l",col="red",ylim=c(-0.2,1.2),lwd=2)
+for (j in forTemplate) {
+  shift <- which.max(sgolayfilt(as.numeric(avg),p=2))-which.max(sgolayfilt(as.numeric(read.nrrd(j),p=2)))
+  lines(shift1Darray(as.numeric(read.nrrd(j)) , shift ))
+  avg2 = avg2 + shift1Darray(as.numeric(read.nrrd(j)) , shift )
+}
+avg2 = avg2 / length(forTemplate)
+lines(avg2,col="green",lwd=2)
+
+avg3=c(rep(0,31))
+plot(as.numeric(avg2),type="n",col="red",ylim=c(-0.2,1.2))
+for (j in forTemplate) {
+  shift <- which.max(sgolayfilt(as.numeric(avg2),p=2))-which.max(sgolayfilt(as.numeric(read.nrrd(j),p=2)))
+  lines(sgolayfilt(as.numeric(read.nrrd(j),p=2)),col="red")
+  lines(shift1Darray( sgolayfilt(as.numeric(read.nrrd(j),p=2)) , shift ))
+  avg3 = avg3 + shift1Darray(as.numeric(read.nrrd(j)) , shift )
+}
+avg3 = avg3 / length(forTemplate)
+lines(avg3,col="green",lwd=4)
+lines(avg,col="magenta",lwd=4)
+
+dffThreshold = 0.1
+notAbove_dFF_threshold <- c()
+notAbove_sdThreshold <- c()
+sdThreshold = 7
+stats.raw <- data.frame(z=character(), roi=character(), raw.dff=numeric() )
+avg.raw <- data.frame()
+
+for (x in animals.clean[grep("AAJA",animals.clean)]) {
+  animal <- readRDS(x)
+  genotype <- as.character(unique(fishGenos[fishGenos$Fish==substr(basename(x),1,3),]$Full_geno))
+  
+  for (z in names(animal)){
+    # print(z)
+    for (roi in names(animal[[z]])) {
+      filtered <- sgolayfilt(animal[[z]][[roi]]$signal,p=2)
+      back <- mean(animal[[z]][[roi]]$background)
+      back.delta <- ( (animal[[z]][[roi]]$background - back) / back )
+      back.mean <- mean(back.delta)
+      back.sd <- sd(back.delta)
+      delta <- filtered-back
+      deltaff <- delta/back
+      rawdff <- ( (animal[[z]][[roi]]$signal - back) / back )
+      if (length(names(animal))==1) {
+        deltaff <- deltaff[seq(1,length(deltaff),by = 20)]
+        rawdff <- rawdff[seq(1,length(rawdff),by = 20)]
+      }
+      if( any(deltaff[5:15]>dffThreshold) ) {
+        stimBlock=substr(basename(x),
+                         regexpr(pattern = ".mat.",basename(x))+5,
+                         regexpr(".RDS",basename(x))-1)
+        avg.raw <- rbind(avg.raw,rawdff)
+        
+        stats.raw <- rbind(stats.raw, data.frame(z=z,roi=roi,trialName=substr(basename(x),1,4),
+                                                 stimBlock=stimBlock,
+                                                 raw.dff=rawdff) )
+        
+      }
+    }
+  }
+  if (nrow(avg.raw)==0 | nrow(stats.raw)==0) {
+    print(paste("skipping",basename(x),"because it has 0 rows with a df/f above",dffThreshold))
+    notAbove_dFF_threshold <- c(notAbove_dFF_threshold,x)
+  } else {
+    df.raw=cbind(avg.raw,stats.raw)
+    colnames(df.raw) <- c(paste("X",1:length(df.raw[,grepl("X",colnames(df.raw))]),sep="."),
+                          "z","roi",
+                          "animalTrial","stimBlock",
+                          "raw.dff")
+  }
+  
+}
+## first round of averaging
+# Get examples from each of the stim blocks
+df.sample.all <- data.frame()
+for (stim in unique(df.raw$stimBlock)) {
+  df.sampled <- sample.dataframe(df.raw[df.raw$stimBlock==stim,],200)[,1:31]
+  df.sample.all <- rbind(df.sample.all,df.sampled)
+}
+df.final <- data.frame()
+# Apply some thresholding
+for (i in 1:nrow(df.sample.all)) {
+  if (sum(df.sample.all[i,5:20]>0.4)>3){
+    df.final <- rbind(df.final,df.sample.all[i,])
+  }
+}
+
+avg <- as.numeric(colMeans(df.final))
+df.shifted <- data.frame()
+for (row.shifted in 1:nrow(df.final)) {
+  shift <- which.max(sgolayfilt(avg,p=2)) - which.max(sgolayfilt(as.numeric(df.final[row.shifted,],p=2)))
+  df.shifted <- rbind(df.shifted,shift1Darray( as.numeric(df.final[row.shifted,]) , ifelse(abs(shift)>5,0,shift) ))
+}
+plot(as.numeric(df.shifted[1,]),type = "n",ylim = c(0,(max(df.shifted)+0.1)))
+
+for (i in 1:nrow(df.shifted)) {
+  lines(as.numeric(df.shifted[i,]),col=ifelse(sum(df.sampled[i,5:20]>0.25)>3,"green","red"))
+  # if (sum(df.sampled[i,5:20]>0.25)>3){
+  #   df.final <- rbind(df.final,df.sampled[i,])
+  # }
+}
+avg2 <- colMeans(df.shifted)
+
+# second round of averaging
+df.sampled <- sample.dataframe(df.raw,200)[,1:31]
+df.final <- data.frame()
+# plot(as.numeric(df.sampled[1,]),type="l",ylim=c(-0.1,3))
+for (i in 1:100) {
+  if (sum(df.sampled[i,5:20]>0.25)>3){
+    df.final <- rbind(df.final,df.sampled[i,])
+  }
+}
+df.shifted <- data.frame()
+for (row.shifted in 1:nrow(df.final)) {
+  shift <- which.max(sgolayfilt(avg2,p=2)) - which.max(sgolayfilt(as.numeric(df.final[row.shifted,],p=2)))
+  df.shifted <- rbind(df.shifted,shift1Darray( as.numeric(df.final[row.shifted,]) , ifelse(shift>5,0,shift) ))
+}
+plot(as.numeric(df.shifted[1,]),type = "l",ylim = c(0,(max(df.shifted)+0.1)))
+for (i in 2:nrow(df.shifted)) {
+  lines(as.numeric(df.shifted[i,]),col=ifelse(sum(df.sampled[i,5:20]>0.25)>3,"green","red"))
+  # if (sum(df.sampled[i,5:20]>0.25)>3){
+  #   df.final <- rbind(df.final,df.sampled[i,])
+  # }
+}
+avg3 <- colMeans(df.shifted)

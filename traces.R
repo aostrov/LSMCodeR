@@ -13,7 +13,7 @@ dffThreshold = 0.1
 fileDir <- "/Volumes/Prospero/traceFiles/"
 
 # animals <- dir(file.path(LSMCodeRConfig$srcdir,"toDiscardEventually"),patt="1.RDS$",full=T)
-animals <- dir(fileDir,full=T)
+animals <- dir(fileDir,full=T,patt=".RDS$")
 animals.clean <- animals[!substr(basename(animals),1,3)%in%fishGenos$Fish[fishGenos$Use=="No"]]
 for (x in animals.clean) {
   animal <- readRDS(x)
@@ -109,24 +109,28 @@ for (x in animals.clean) {
         registered=c(read.nrrd(file="~/Desktop/tmp/reformatted.nrrd"))
         registeredDF <- rbind(registeredDF,registered)
       }
+      
       saveRDS(registeredDF,
               file = file.path(fileDir,
                                paste(basename(x),"-aligned.RDS",sep="")))
-      
-    }
-     
-    pdf(file = file.path(fileDir,
-                         paste(basename(x),".pdf",sep="")))
+      pdf(file = file.path(fileDir,
+                           paste(basename(x),".pdf",sep="")))
       plot(x=seq(0,6,0.2),
            y = registeredDF[1,],
            type = "l",ylim=c(-0.05,max(registeredDF[,6:18])))
       
-      for ( j in seq(2,nrow(registeredDF),10) ) {
+      rows <- ifelse(test = nrow(registeredDF)>200,10,1)
+      for ( j in  seq(2,nrow(registeredDF),rows)) {
         lines(x=seq(0,6,0.2),y=registeredDF[j,])
       }
       lines(x=seq(0,6,0.2),y=colMeans(registeredDF),col="green",lwd=2)
       lines(x=seq(0,6,0.2),y=colMeans(testData[,grepl("X",colnames(testData))]),col="magenta",lwd=2)
-    dev.off()
+      # legend("topright",)
+      dev.off()
+      
+      
+    }
+     
     
     ############################################################################
     ############################################################################
@@ -198,20 +202,20 @@ for (x in animals.clean) {
   }
 }
 
-attr(notAbove_sdThreshold,"sdThreshold") <- sdThreshold
-attr(notAbove_dFF_threshold,"dFF_Threshold") <- dffThreshold
-saveRDS(animalAverageDF,file=file.path(LSMCodeRConfig$srcdir,"objects","animalAverageTraces.RDS"))
-
-newDF.big <- data.frame()
-for (j in unique(substring(animalAverageDF.raw$animalTrial,1,3))){
-  byAnimal=animalAverageDF.raw[grepl(paste("^",j,sep=""),animalAverageDF.raw$animalTrial),]
-  newDF <- data.frame()
-  for (i in seq(0,6,0.2)){
-    newDF <- rbind(newDF,data.frame(average=mean(byAnimal[as.character(byAnimal$time)==as.character(i),"trailAverage"]),time=i))
-    
-  }
-  newDF$genotype <- unique(byAnimal$genotype)
-  newDF$animal <- j
-  newDF.big <- rbind(newDF.big,newDF)
-}
-saveRDS(newDF.big,file=file.path(LSMCodeRConfig$srcdir,"objects","animalAverageTracesByAnimalNotROI.RDS"))
+# attr(notAbove_sdThreshold,"sdThreshold") <- sdThreshold
+# attr(notAbove_dFF_threshold,"dFF_Threshold") <- dffThreshold
+# saveRDS(animalAverageDF,file=file.path(LSMCodeRConfig$srcdir,"objects","animalAverageTraces.RDS"))
+# 
+# newDF.big <- data.frame()
+# for (j in unique(substring(animalAverageDF.raw$animalTrial,1,3))){
+#   byAnimal=animalAverageDF.raw[grepl(paste("^",j,sep=""),animalAverageDF.raw$animalTrial),]
+#   newDF <- data.frame()
+#   for (i in seq(0,6,0.2)){
+#     newDF <- rbind(newDF,data.frame(average=mean(byAnimal[as.character(byAnimal$time)==as.character(i),"trailAverage"]),time=i))
+#     
+#   }
+#   newDF$genotype <- unique(byAnimal$genotype)
+#   newDF$animal <- j
+#   newDF.big <- rbind(newDF.big,newDF)
+# }
+# saveRDS(newDF.big,file=file.path(LSMCodeRConfig$srcdir,"objects","animalAverageTracesByAnimalNotROI.RDS"))
