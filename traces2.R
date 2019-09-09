@@ -98,7 +98,7 @@ animalBaseName <- unique(substr(basename(animals.clean),1,3))
 
 df.averages <- data.frame()
 
-for (uniqueAnimal in animalBaseName[27:length(animalBaseName)]){
+for (uniqueAnimal in animalBaseName[]){#27:length(animalBaseName)
   stats.raw <- data.frame(z=character(), roi=character(), raw.dff=numeric() )
   avg.raw <- data.frame()
   
