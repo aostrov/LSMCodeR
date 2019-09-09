@@ -75,9 +75,18 @@ ACH,A,3.6.2019,1,6s,B.28.05,,Yes,150
 ACI,A,3.6.2019,1,6s,B.28.05,,Yes,150
 ACJ,A,3.6.2019,2,6f EF05,C.28.05,,Yes,150
 ACK,A,3.6.2019,1,6f EF05,C.28.05,,Yes,150
-ACL,A,11.6.2019,1,6s,C.4.06,Single plane because the agarose did not stick to the plate,Yes,150
+ACL,A,11.6.2019,1,6s,C.4.06,Single plane because the agarose didn’t stick to the plate,Yes,150
 ACM,A,11.6.2019,1,6s,C.4.06,,Yes,150
 ACN,A,11.6.2019,1,6s,C.4.06,Somewhat sparse,No,150
 ACO,A,11.6.2019,1,7b EF05,B.4.06,,Yes,150
 ACP,A,11.6.2019,1,7b EF05,B.4.06,,Yes,150
 ACQ,A,11.6.2019,1,7b EF05,B.4.06,,Yes,150
+ACR,A,12.8.2019,2,7b,X.6.08,,Yes,150
+ACS,A,12.8.2019,2,7b,X.6.08,,No,150
+ACT,A,12.8.2019,2,7b EF05,Y.6.08,,Yes,150
+ACU,A,12.8.2019,2,7b EF05,Y.6.08,,Yes,150
+ACV,A,9.9.2019,3,6f,X.3.09,Embedded a bit funny. ,No,150
+ACV,B,9.9.2019,1,6f,X.3.09,Embedded a bit funny. ,Yes,150
+ACW,A,9.9.2019,1,6f,X.3.09,,Yes,150
+ACX,A,9.9.2019,1,6s,Y.3.09,,No,150
+ACX,B,9.9.2019,1,6s,Y.3.09,,No,150
