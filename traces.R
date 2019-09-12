@@ -12,9 +12,9 @@ dffThreshold = 0.1
 
 fileDir <- "/Volumes/Prospero/traceFiles/"
 
-# animals <- dir(file.path(LSMCodeRConfig$srcdir,"toDiscardEventually"),patt="1.RDS$",full=T)
-animals <- dir(fileDir,full=T,patt=".RDS$")
-animals.clean <- animals[!substr(basename(animals),1,3)%in%fishGenos$Fish[fishGenos$Use=="No"]]
+animals <- dir(file.path(LSMCodeRConfig$srcdir,"toDiscardEventually"),patt="1.RDS$",full=T)
+# animals <- dir(fileDir,full=T,patt=".RDS$")
+animals.clean <- animals[!substr(basename(animals),1,4)%in%fishGenos$full_name[fishGenos$Use=="No"]]
 for (x in animals.clean) {
   animal <- readRDS(x)
   genotype <- as.character(unique(fishGenos[fishGenos$Fish==substr(basename(x),1,3),]$Full_geno))

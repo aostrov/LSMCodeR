@@ -74,6 +74,7 @@ if (dir.exists("F:\\Imaging\\GCaMP7_tests\\20181204-g7")) {
 offset <- 399
 pixelSize <- 0.8
 roiEdgeLength <- 26
+hdf5.dimOrder <- c('t','c','z','y','x')
 
 ######################
 ## On disk metadata ##
@@ -81,3 +82,4 @@ roiEdgeLength <- 26
 tectumROIs <- read.csv(file.path(LSMCodeRConfig$srcdir,"stuff","tectumROI.csv"))
 fishGenos <- read.csv(file.path(LSMCodeRConfig$srcdir,"models","DSLM-fish.csv"))
 fishGenos$Date <- as.character(as.Date(fishGenos$Date,format='%d.%m.%Y'))
+fishGenos$full_name=paste(fishGenos$Fish,fishGenos$Trial,sep="")
